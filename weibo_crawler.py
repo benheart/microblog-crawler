@@ -166,8 +166,11 @@ def analyze_fans(social_data_dict):
 
 
 def main():
+    # 根据URL等待队列循环爬取用户信息，
     while len(URL_WAIT_QUEUE) != 0:
+        # 从URL等待队列中随机获取一条URL进行爬取
         user_home_url = URL_WAIT_QUEUE.popitem()[0]
+        # 将该URL加入URL完成队列
         URL_FINISH_QUEUE[user_home_url] = ''
         print user_home_url
         # 获取用户社交信息
@@ -181,9 +184,9 @@ def main():
         # 爬取粉丝用户
         analyze_fans(social_data_dict)
         time.sleep(1)
-    # 关闭文件
-    # close_files()
+    # 爬取完成，终止程序
     print 'Done'
+    exit(0)
 
 if __name__ == '__main__':
     main()
