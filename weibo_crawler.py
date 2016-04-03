@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 # encoding=utf-8
-import json
-import Queue
+import time
 import codecs
 import requests
 from bs4 import BeautifulSoup
 
-
 # 定义全局变量
-USER_HOME_URL = 'http://weibo.cn/1197161814'
-social_data_file = codecs.open('social_data_file.txt', 'a', encoding='utf-8')
-user_data_file = codecs.open('user_data_file.txt', 'a', encoding='utf-8')
+URL_WAIT_QUEUE = {'http://weibo.cn/1697601814': ''}
+URL_FINISH_QUEUE = {}
 
 
 def get_user_page(url):
@@ -32,12 +29,13 @@ def get_user_page(url):
 
 
 def get_social_data(user_home_url):
+    social_data_file = codecs.open('social_data_file.txt', 'a', encoding='utf-8')
     # 获取用户主页面
     html = get_user_page(user_home_url)
     soup = BeautifulSoup(html, "html.parser")
     social_data_block = soup.find('div', attrs={'class': 'tip2'})
     # 新建用户社交信息字典
-    social_data_dict = {'user_id': '-', 'profile': '-', 'follow': '-', 'fans': '-'}
+    social_data_dict = {'user_id': '', 'profile': '', 'follow': '', 'fans': ''}
     # 找到用户ID、微博数、关注数、粉丝数标签
     user_id = social_data_block.find_all('a')[0].get('href').encode("utf-8")
     user_profile = social_data_block.find('span', attrs={'class': 'tc'}).string.encode("utf-8")
@@ -49,14 +47,16 @@ def get_social_data(user_home_url):
     social_data_dict['follow'] = filter(str.isdigit, user_follow)
     social_data_dict['fans'] = filter(str.isdigit, user_fans)
     # 追加写入用户社交信息文件
-    social_data_file.write(social_data_dict['user_id'] + ' ' +
-                           social_data_dict['profile'] + ' ' +
-                           social_data_dict['follow'] + ' ' +
+    social_data_file.write(social_data_dict['user_id'] + '|' +
+                           social_data_dict['profile'] + '|' +
+                           social_data_dict['follow'] + '|' +
                            social_data_dict['fans'] + '\n')
+    social_data_file.close()
     return social_data_dict
 
 
 def get_user_data(social_data_dict):
+    user_data_file = codecs.open('user_data_file.txt', 'a', encoding='utf-8')
     download_url = 'http://weibo.cn/' + social_data_dict['user_id'] + '/info'
     # 获取用户资料页面
     html = get_user_page(download_url)
@@ -64,27 +64,30 @@ def get_user_data(social_data_dict):
     user_data_block = soup.find_all('div', attrs={'class': 'c'})[2]
     length = len(user_data_block.find_all('br'))
     # 新建用户资料字典
-    user_data_dict = {'昵称'.decode('utf-8'): '-',
-                      '认证'.decode('utf-8'): '-',
-                      '性别'.decode('utf-8'): '-',
-                      '地区'.decode('utf-8'): '-',
-                      '生日'.decode('utf-8'): '-'}
+    user_data_dict = {'昵称'.decode('utf-8'): '',
+                      '认证'.decode('utf-8'): '0',
+                      '性别'.decode('utf-8'): '',
+                      '地区'.decode('utf-8'): '',
+                      '生日'.decode('utf-8'): ''}
     # 提取用户主要资料并写入字典
     for num in range(1, length + 1):
         user_data_tag = user_data_block.contents[(num - 1) * 2].split(':')[0]
-        if user_data_dict.has_key(user_data_tag):
+        if user_data_tag in user_data_dict:
             user_data_dict[user_data_tag] = user_data_block.contents[(num - 1) * 2].split(':')[1]
     # 如果用户含有认证信息，则将认证标志设置为true
-    if user_data_dict['认证'.decode('utf-8')] != '-':
-        user_data_dict['认证'.decode('utf-8')] = 'true'
+    if user_data_dict['认证'.decode('utf-8')] != '':
+        user_data_dict['认证'.decode('utf-8')] = '1'
+    if len(user_data_dict['生日'.decode('utf-8')]) != 10:
+        user_data_dict['认证'.decode('utf-8')] = ''
     print user_data_dict['昵称'.decode('utf-8')]
     # 追加写入用户资料文件
-    user_data_file.write(social_data_dict['user_id'] + ' ' +
-                         user_data_dict['昵称'.decode('utf-8')] + ' ' +
-                         user_data_dict['认证'.decode('utf-8')] + ' ' +
-                         user_data_dict['性别'.decode('utf-8')] + ' ' +
-                         user_data_dict['地区'.decode('utf-8')] + ' ' +
+    user_data_file.write(social_data_dict['user_id'] + '|' +
+                         user_data_dict['昵称'.decode('utf-8')] + '|' +
+                         user_data_dict['认证'.decode('utf-8')] + '|' +
+                         user_data_dict['性别'.decode('utf-8')] + '|' +
+                         user_data_dict['地区'.decode('utf-8')] + '|' +
                          user_data_dict['生日'.decode('utf-8')] + '\n')
+    user_data_file.close()
 
 
 def analyze_follow(social_data_dict):
@@ -106,7 +109,9 @@ def analyze_follow(social_data_dict):
         # 逐行处理当前页面关注用户
         for i in range(0, len(follow_block) / 2):
             follow = follow_block[i * 2 + 1].find_all('a')[0]
-            print follow
+            if follow.get('href') not in URL_FINISH_QUEUE and follow.get('href') not in URL_WAIT_QUEUE:
+                URL_WAIT_QUEUE[follow.get('href')] = ''
+            # print follow.get('href')
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
         download_url = 'http://weibo.cn/' + social_data_dict['user_id'] + '/follow?page=' + str(page_num + 1)
@@ -117,7 +122,9 @@ def analyze_follow(social_data_dict):
         # 逐行处理最后一页关注用户
         for i in range(0, len(follow_block) / 2):
             follow = follow_block[i * 2 + 1].find_all('a')[0]
-            print follow
+            if follow.get('href') not in URL_FINISH_QUEUE and follow.get('href') not in URL_WAIT_QUEUE:
+                URL_WAIT_QUEUE[follow.get('href')] = ''
+            # print follow.get('href')
 
 
 def analyze_fans(social_data_dict):
@@ -139,7 +146,10 @@ def analyze_fans(social_data_dict):
         # 逐行处理当前页面粉丝用户
         for i in range(0, len(fans_block) / 2):
             fans = fans_block[i * 2 + 1].find_all('a')[0]
-            print fans
+            if fans.get('href') not in URL_FINISH_QUEUE and fans.get('href') not in URL_WAIT_QUEUE:
+                URL_WAIT_QUEUE[fans.get('href')] = ''
+            # print fans.get('href')
+
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
         download_url = 'http://weibo.cn/' + social_data_dict['user_id'] + '/fans?page=' + str(page_num + 1)
@@ -150,29 +160,30 @@ def analyze_fans(social_data_dict):
         # 逐行处理最后一页粉丝用户
         for i in range(0, len(fans_block) / 2):
             fans = fans_block[i * 2 + 1].find_all('a')[0]
-            print fans
-
-
-def close_files():
-    social_data_file.close()
-    user_data_file.close()
+            if fans.get('href') not in URL_FINISH_QUEUE and fans.get('href') not in URL_WAIT_QUEUE:
+                URL_WAIT_QUEUE[fans.get('href')] = ''
+            # print fans.get('href')
 
 
 def main():
-    # 获取用户社交信息
-    social_data_dict = get_social_data(USER_HOME_URL)
-    # 获取用户资料
-    get_user_data(social_data_dict)
-    print 'follow list:'
-    # 爬取关注用户
-    analyze_follow(social_data_dict)
-    print 'fans_list:'
-    # 爬取粉丝用户
-    analyze_fans(social_data_dict)
+    while len(URL_WAIT_QUEUE) != 0:
+        user_home_url = URL_WAIT_QUEUE.popitem()[0]
+        URL_FINISH_QUEUE[user_home_url] = ''
+        print user_home_url
+        # 获取用户社交信息
+        social_data_dict = get_social_data(user_home_url)
+        # 获取用户资料
+        get_user_data(social_data_dict)
+        print 'follow list:'
+        # 爬取关注用户
+        analyze_follow(social_data_dict)
+        print 'fans_list:'
+        # 爬取粉丝用户
+        analyze_fans(social_data_dict)
+        time.sleep(1)
     # 关闭文件
-    close_files()
+    # close_files()
     print 'Done'
-
 
 if __name__ == '__main__':
     main()
