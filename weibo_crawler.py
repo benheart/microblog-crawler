@@ -6,6 +6,7 @@ import codecs
 import requests
 from bs4 import BeautifulSoup
 
+
 # 定义全局变量
 USER_HOME_URL = 'http://weibo.cn/1934183965'
 social_data_file = codecs.open('social_data_file.txt', 'a', encoding='utf-8')
