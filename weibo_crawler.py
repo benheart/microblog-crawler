@@ -148,7 +148,7 @@ def get_social_data(user_home_url):
                       '认证'.decode('utf-8'): '0',
                       '性别'.decode('utf-8'): '',
                       '地区'.decode('utf-8'): '',
-                      '生日'.decode('utf-8'): ''}
+                      '生日'.decode('utf-8'): '0001-00-00'}
     # 找到用户ID、微博数、关注数、粉丝数标签
     user_id = social_data_block.find_all('a')[0].get('href').encode("utf-8")
     user_profile = social_data_block.find('span', attrs={'class': 'tc'}).string.encode("utf-8")
@@ -167,6 +167,10 @@ def get_user_data(user_data_dict):
     # 获取用户资料页面
     html = get_user_page(download_url)
     soup = BeautifulSoup(html, "html.parser")
+    while soup.title.string == '微博广场'.decode('utf-8'):
+        print soup.title.string
+        html = get_user_page(download_url)
+        soup = BeautifulSoup(html, "html.parser")
     user_data_block = soup.find_all('div', attrs={'class': 'c'})[2]
     length = len(user_data_block.find_all('br'))
     # 提取用户主要资料并写入字典
@@ -185,7 +189,7 @@ def get_user_data(user_data_dict):
         user_province = user_data_dict['地区'.decode('utf-8')].split(' ')[0]
         user_data_dict['地区'.decode('utf-8')] = user_province
     if len(user_data_dict['生日'.decode('utf-8')]) != 10:
-        user_data_dict['生日'.decode('utf-8')] = ''
+        user_data_dict['生日'.decode('utf-8')] = '0001-00-00'
     print user_data_dict['昵称'.decode('utf-8')]
     insert_user_data(user_data_dict)
 
