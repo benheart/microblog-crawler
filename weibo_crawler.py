@@ -3,6 +3,7 @@
 import time
 import requests
 import MySQLdb
+import random
 from bs4 import BeautifulSoup
 
 # 定义全局变量
@@ -20,7 +21,7 @@ def get_user_page(url):
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept - Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
         'Accept - Encoding': 'gzip, deflate',
-        'Cookie': '_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUB=_2A256Dk03DeRxGeNG41sX8C7Izz2IHXVZ8VN_rDV6PUJbrdAKLVP7kW1LHet4g0eao8vRQ6XzRll9OjTmOZqGIg..; gsid_CTandWM=4uQe77341KMDJeqt84znDoI9y77',
+        'Cookie': '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256D0RFDeRxGeVO4lMW8ivPzDuIHXVZ8GwNrDV6PUJbstAKLXf6kW1LHesM5lu57qai26eXjAgBcJJVjOcKCQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFfCw2GN3RyY7P2UsKFBk8x5JpX5o2p; SUHB=0D-FwzttWP_JVk; SSOLoginState=1460352021; gsid_CTandWM=4u0fCpOz5UNRU6GH7Q6VGcYix65',
         'Connection': 'keep-alive'
     }
     # 发送请求获取响应页面
@@ -133,6 +134,10 @@ def get_social_data(user_home_url):
     # 获取用户主页面
     html = get_user_page(user_home_url)
     soup = BeautifulSoup(html, "html.parser")
+    while soup.title.string == '微博广场'.decode('utf-8'):
+        print soup.title.string
+        html = get_user_page(user_home_url)
+        soup = BeautifulSoup(html, "html.parser")
     social_data_block = soup.find('div', attrs={'class': 'tip2'})
     # 新建用户社交信息字典
     user_data_dict = {'user_id': '',
@@ -170,7 +175,7 @@ def get_user_data(user_data_dict):
         if user_data_tag in user_data_dict:
             user_data_dict[user_data_tag] = user_data_block.contents[(num - 1) * 2].split(':')[1]
     # 如果用户含有认证信息，则将认证标志设置为true
-    if user_data_dict['认证'.decode('utf-8')] != '':
+    if user_data_dict['认证'.decode('utf-8')] != '0':
         user_data_dict['认证'.decode('utf-8')] = '1'
     if user_data_dict['性别'.decode('utf-8')] == '男'.decode('utf-8'):
         user_data_dict['性别'.decode('utf-8')] = '1'
@@ -284,7 +289,7 @@ def main():
         print 'fans_list:'
         # 爬取粉丝用户
         analyze_fans(user_data_dict)
-        time.sleep(1)
+        time.sleep(random.randint(1, 2))
         url_value = get_url_from_database()
     # 爬取完成，终止程序
     crawler_db.close()
