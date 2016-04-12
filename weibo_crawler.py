@@ -21,7 +21,7 @@ def get_user_page(url):
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept - Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
         'Accept - Encoding': 'gzip, deflate',
-        'Cookie': '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256D0RFDeRxGeVO4lMW8ivPzDuIHXVZ8GwNrDV6PUJbstAKLXf6kW1LHesM5lu57qai26eXjAgBcJJVjOcKCQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFfCw2GN3RyY7P2UsKFBk8x5JpX5o2p; SUHB=0D-FwzttWP_JVk; SSOLoginState=1460352021; gsid_CTandWM=4u0fCpOz5UNRU6GH7Q6VGcYix65',
+        'Cookie': '_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUB=_2A256D9d6DeRxGeNG41sX8C7Izz2IHXVZ8_kyrDV6PUJbrdAKLU2lkW1LHeuhezD2YBVVKAOOQYyohYQkUskZlw..; gsid_CTandWM=4uQe77341KMDJeqt84znDoI9y77',
         'Connection': 'keep-alive'
     }
     # 发送请求获取响应页面
@@ -136,6 +136,12 @@ def get_social_data(user_home_url):
     soup = BeautifulSoup(html, "html.parser")
     while soup.title.string == '微博广场'.decode('utf-8'):
         print soup.title.string
+        html = get_user_page(user_home_url)
+        soup = BeautifulSoup(html, "html.parser")
+    while soup.title.string == '微博'.decode('utf-8'):
+        print '异常账户'
+        change_url_status(user_home_url)
+        user_home_url = get_url_from_database()
         html = get_user_page(user_home_url)
         soup = BeautifulSoup(html, "html.parser")
     social_data_block = soup.find('div', attrs={'class': 'tip2'})
@@ -293,7 +299,7 @@ def main():
         print 'fans_list:'
         # 爬取粉丝用户
         analyze_fans(user_data_dict)
-        time.sleep(random.randint(1, 2))
+        # time.sleep(random.randint(1, 2))
         url_value = get_url_from_database()
     # 爬取完成，终止程序
     crawler_db.close()
