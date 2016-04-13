@@ -14,6 +14,9 @@ cursor = crawler_db.cursor()
 
 
 def get_user_page(url):
+    cookies = ['_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256CcUTDeTxGeNG4lcZ9i7NzjqIHXVZ9etbrDV6PUJbstAKLW7XkW1LHes1Zg4yX-RqOszppEyVO9QVeLIN7g..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5NYesUeCIjxqdhNVnmv-CA5JpX5o2p; SUHB=0G0-1NGnv4XvPo; SSOLoginState=1460516163; gsid_CTandWM=4u7SCpOz58XYPK4q41gq8oJMw2w',
+              '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256CboVDeTxGeNG4lQX9C3KyTyIHXVZ9cZdrDV6PUJbstAKLRfckW1LHetYJxR-tJxStgBUcA8H6C-w8mEiCg..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5ZLanpUjsJ9VPINShhQlbX5JpX5o2p; SUHB=0sqRXKdtCAGTvs; SSOLoginState=1460521541; gsid_CTandWM=4u0zCpOz5t3ZMmsXVY7iXoJMw2w',
+              '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256CbsaDeTxGeNG4lQX9y7Nwj6IHXVZ9cVSrDV6PUJbstANLVH7kW1LHetWVG6qcSPbd2R4ThBUX04Azf_JnA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WhBVrHIyWFlrYBZ4BOfMP1z5JpX5o2p; SUHB=03oV-wanCivEIo; SSOLoginState=1460521802; gsid_CTandWM=4utdCpOz5Gqt0vTFj9n6LoJZ9a0']
     # 将User-Agent伪装成浏览器
     header = {
         'Host': 'weibo.cn',
@@ -21,14 +24,18 @@ def get_user_page(url):
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept - Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
         'Accept - Encoding': 'gzip, deflate',
-        'Cookie': '_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUB=_2A256D9d6DeRxGeNG41sX8C7Izz2IHXVZ8_kyrDV6PUJbrdAKLU2lkW1LHeuhezD2YBVVKAOOQYyohYQkUskZlw..; gsid_CTandWM=4uQe77341KMDJeqt84znDoI9y77',
+        'Cookie': cookies[2],
         'Connection': 'keep-alive'
     }
     # 发送请求获取响应页面
     html = requests.get(url, headers=header).content
-    # print requests.get(url, headers=header).status_code
     # print html
-    return html
+    soup = BeautifulSoup(html, "html.parser")
+    while soup.title.string == '微博广场'.decode('utf-8'):
+        print soup.title.string
+        html = requests.get(url, headers=header).content
+        soup = BeautifulSoup(html, "html.parser")
+    return soup
 
 
 def get_url_from_database():
@@ -93,9 +100,10 @@ def url_in_database(url_value):
         cursor.execute(sql)
         results = cursor.fetchall()
         if len(results) != 0:
-            return True
-        else:
+            print 'URL: ' + url_value + ' already exist in db!'
             return False
+        else:
+            return True
     except MySQLdb.Error, error_info:
         print error_info
         crawler_db.rollback()
@@ -132,18 +140,12 @@ def insert_user_data(user_data_dict):
 
 def get_social_data(user_home_url):
     # 获取用户主页面
-    html = get_user_page(user_home_url)
-    soup = BeautifulSoup(html, "html.parser")
-    while soup.title.string == '微博广场'.decode('utf-8'):
-        print soup.title.string
-        html = get_user_page(user_home_url)
-        soup = BeautifulSoup(html, "html.parser")
+    soup = get_user_page(user_home_url)
     while soup.title.string == '微博'.decode('utf-8'):
         print '异常账户'
         change_url_status(user_home_url)
         user_home_url = get_url_from_database()
-        html = get_user_page(user_home_url)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = get_user_page(user_home_url)
     social_data_block = soup.find('div', attrs={'class': 'tip2'})
     # 新建用户社交信息字典
     user_data_dict = {'user_id': '',
@@ -171,12 +173,7 @@ def get_social_data(user_home_url):
 def get_user_data(user_data_dict):
     download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/info'
     # 获取用户资料页面
-    html = get_user_page(download_url)
-    soup = BeautifulSoup(html, "html.parser")
-    while soup.title.string == '微博广场'.decode('utf-8'):
-        print soup.title.string
-        html = get_user_page(download_url)
-        soup = BeautifulSoup(html, "html.parser")
+    soup = get_user_page(download_url)
     user_data_block = soup.find_all('div', attrs={'class': 'c'})[2]
     length = len(user_data_block.find_all('br'))
     # 提取用户主要资料并写入字典
@@ -213,30 +210,24 @@ def analyze_follow(user_data_dict):
     for num in range(1, page_num + 1):
         download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/follow?page=' + str(num)
         # print download_url
-        html = get_user_page(download_url)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = get_user_page(download_url)
         follow_block = soup.find_all('td', attrs={'valign': 'top'})
         # 逐行处理当前页面关注用户
         for i in range(0, len(follow_block) / 2):
             follow = follow_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(follow.get('href')):
-                print 'URL: ' + follow.get('href') + ' already exist in db!'
-            else:
                 insert_new_url(follow.get('href'))
             # print follow.get('href')
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
         download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/follow?page=' + str(page_num + 1)
         # print download_url
-        html = get_user_page(download_url)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = get_user_page(download_url)
         follow_block = soup.find_all('td', attrs={'valign': 'top'})
         # 逐行处理最后一页关注用户
         for i in range(0, len(follow_block) / 2):
             follow = follow_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(follow.get('href')):
-                print 'URL: ' + follow.get('href') + ' already exist in db!'
-            else:
                 insert_new_url(follow.get('href'))
             # print follow.get('href')
 
@@ -254,15 +245,12 @@ def analyze_fans(user_data_dict):
     for num in range(1, page_num + 1):
         download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/fans?page=' + str(num)
         # print download_url
-        html = get_user_page(download_url)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = get_user_page(download_url)
         fans_block = soup.find_all('td', attrs={'valign': 'top'})
         # 逐行处理当前页面粉丝用户
         for i in range(0, len(fans_block) / 2):
             fans = fans_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(fans.get('href')):
-                print 'URL: ' + fans.get('href') + ' already exist in db!'
-            else:
                 insert_new_url(fans.get('href'))
             # print fans.get('href')
 
@@ -270,15 +258,12 @@ def analyze_fans(user_data_dict):
     if page_last != 0:
         download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/fans?page=' + str(page_num + 1)
         # print download_url
-        html = get_user_page(download_url)
-        soup = BeautifulSoup(html, "html.parser")
+        soup = get_user_page(download_url)
         fans_block = soup.find_all('td', attrs={'valign': 'top'})
         # 逐行处理最后一页粉丝用户
         for i in range(0, len(fans_block) / 2):
             fans = fans_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(fans.get('href')):
-                print 'URL: ' + fans.get('href') + ' already exist in db!'
-            else:
                 insert_new_url(fans.get('href'))
             # print fans.get('href')
 
