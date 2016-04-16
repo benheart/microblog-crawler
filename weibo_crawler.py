@@ -4,6 +4,8 @@ import time
 import requests
 import MySQLdb
 import random
+import sys
+import threading
 from bs4 import BeautifulSoup
 
 # 定义全局变量
@@ -11,12 +13,28 @@ WAIT_STATUS = 0
 FINISH_STATUS = 1
 crawler_db = MySQLdb.Connect(host="localhost", user="root", passwd="5179", db="weibo_crawler", charset='utf8')
 cursor = crawler_db.cursor()
+thread_lock = threading.Lock()
+
+
+class MyThread(threading.Thread):
+    def __init__(self, thread_id, thread_name, url_value):
+        threading.Thread.__init__(self)
+        self.thread_id = thread_id
+        self.thread_name = thread_name
+        self.url_value = url_value
+
+    def run(self):
+        process_url(self.thread_name, self.url_value)
+        print "Exiting " + self.thread_name
 
 
 def get_user_page(url):
-    cookies = ['_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256CcUTDeTxGeNG4lcZ9i7NzjqIHXVZ9etbrDV6PUJbstAKLW7XkW1LHes1Zg4yX-RqOszppEyVO9QVeLIN7g..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5NYesUeCIjxqdhNVnmv-CA5JpX5o2p; SUHB=0G0-1NGnv4XvPo; SSOLoginState=1460516163; gsid_CTandWM=4u7SCpOz58XYPK4q41gq8oJMw2w',
-              '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256CboVDeTxGeNG4lQX9C3KyTyIHXVZ9cZdrDV6PUJbstAKLRfckW1LHetYJxR-tJxStgBUcA8H6C-w8mEiCg..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5ZLanpUjsJ9VPINShhQlbX5JpX5o2p; SUHB=0sqRXKdtCAGTvs; SSOLoginState=1460521541; gsid_CTandWM=4u0zCpOz5t3ZMmsXVY7iXoJMw2w',
-              '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256CbsaDeTxGeNG4lQX9y7Nwj6IHXVZ9cVSrDV6PUJbstANLVH7kW1LHetWVG6qcSPbd2R4ThBUX04Azf_JnA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WhBVrHIyWFlrYBZ4BOfMP1z5JpX5o2p; SUHB=03oV-wanCivEIo; SSOLoginState=1460521802; gsid_CTandWM=4utdCpOz5Gqt0vTFj9n6LoJZ9a0']
+    cookies = ['_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=0h1ZIaTWu_DHQz; SUB=_2A256FBHYDeTxGeNG4lQX9SnJzjWIHXVZ9r-QrDV6PUNbvtAKLWvkkW1LHespqzEDhKK_FFvqoBQJwEHB0L1MrQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WWl2w5PECYleQSXim1uJFnV5JpX5KMt; SSOLoginState=1460691336; gsid_CTandWM=4udiCpOz5iJ2JOaNnwFL4oJZn91',
+               '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256FeWHDeRxGeNG41sX8C7Izz2IHXVZ-YvPrDV6PUJbstBeLWHykW1LHetUrXNuEV9Qw6BncCWfaYlYaN9XCQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5W1.RklowafO6dgkjgK47v5JpX5o2p; SUHB=0S7y4p4nR5kWXX; SSOLoginState=1460770263; gsid_CTandWM=4uHmCpOz56bqqt796KsNmoI9y77',
+               '_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=05iq6bhTk3SHvN; SUB=_2A256FZI6DeTxGeNG4lQX9SnJzjWIHXVZ-T5yrDV6PUJbstAKLWfwkW1LHeuaO79Kw2RYDagUMG1QJfsU_9EFaA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WWl2w5PECYleQSXim1uJFnV5JpX5o2p; SSOLoginState=1460789866; gsid_CTandWM=4ufzCpOz5ImkTPoE9BphMoJZn91',
+               '_T_WM=87c4880b888b3cc3de9172dcb377c48e; SUHB=0z1QUob9PHGOv-; SUB=_2A256FkKXDeTxGeNG4loT-C3MwjyIHXVZ-W7frDV6PUJbstANLVr-kW1LHesGlTsYDsD7Cbk3hvFA1vxfj1lKaA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5aY-EDEL5TiJCLSWnvkWEM5JpX5o2p; SSOLoginState=1460810439; gsid_CTandWM=4uKQCpOz5KzYeSk8oBfcroKpB1s']
+    # index = random.randint(0, 3)
+    # print index
     # 将User-Agent伪装成浏览器
     header = {
         'Host': 'weibo.cn',
@@ -24,11 +42,12 @@ def get_user_page(url):
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept - Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
         'Accept - Encoding': 'gzip, deflate',
-        'Cookie': cookies[2],
+        'Cookie': cookies[3],
         'Connection': 'keep-alive'
     }
     # 发送请求获取响应页面
     html = requests.get(url, headers=header).content
+    # print sys.getsizeof(html) - 21
     # print html
     soup = BeautifulSoup(html, "html.parser")
     while soup.title.string == '微博广场'.decode('utf-8'):
@@ -39,25 +58,24 @@ def get_user_page(url):
 
 
 def get_url_from_database():
-    url_value = ''
+    url_value_list = []
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
-        sql = "select * from %s where url_status = 0 limit 1" % table_name
+        sql = "select * from %s where url_status = 0 limit 10" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
             results = cursor.fetchall()
             if len(results) != 0:
                 for row in results:
-                    url_id = row[0]
                     url_value = row[1]
-                    # url_status = row[2]
-                return url_value
+                    url_value_list.append(url_value)
+                return url_value_list
         except MySQLdb.Error, error_info:
             print error_info
             crawler_db.rollback()
-            return url_value
-    return url_value
+            return url_value_list
+    return url_value_list
 
 
 def change_url_status(url_value):
@@ -143,8 +161,10 @@ def get_social_data(user_home_url):
     soup = get_user_page(user_home_url)
     while soup.title.string == '微博'.decode('utf-8'):
         print '异常账户'
+        thread_lock.acquire()
         change_url_status(user_home_url)
         user_home_url = get_url_from_database()
+        thread_lock.release()
         soup = get_user_page(user_home_url)
     social_data_block = soup.find('div', attrs={'class': 'tip2'})
     # 新建用户社交信息字典
@@ -194,7 +214,7 @@ def get_user_data(user_data_dict):
     if len(user_data_dict['生日'.decode('utf-8')]) != 10:
         user_data_dict['生日'.decode('utf-8')] = '0001-00-00'
     print user_data_dict['昵称'.decode('utf-8')]
-    insert_user_data(user_data_dict)
+    return user_data_dict
 
 
 def analyze_follow(user_data_dict):
@@ -268,24 +288,43 @@ def analyze_fans(user_data_dict):
             # print fans.get('href')
 
 
+def process_url(thread_name, url_value):
+    print "%s processing url: %s" % (thread_name, url_value)
+    # 获取用户社交信息
+    user_data_dict = get_social_data(url_value)
+    # 获取用户资料
+    user_data_dict = get_user_data(user_data_dict)
+
+    thread_lock.acquire()
+    insert_user_data(user_data_dict)
+    change_url_status(url_value)
+    thread_lock.release()
+
+    # print 'follow list:'
+    # # 爬取关注用户
+    # analyze_follow(user_data_dict)
+    # print 'fans_list:'
+    # # 爬取粉丝用户
+    # analyze_fans(user_data_dict)
+
+
 def main():
-    url_value = get_url_from_database()
+    url_value_list = get_url_from_database()
     # 根据URL等待队列循环爬取用户信息
-    while url_value != '':
-        print url_value
-        # 获取用户社交信息
-        user_data_dict = get_social_data(url_value)
-        # 获取用户资料
-        get_user_data(user_data_dict)
-        change_url_status(url_value)
-        print 'follow list:'
-        # 爬取关注用户
-        analyze_follow(user_data_dict)
-        print 'fans_list:'
-        # 爬取粉丝用户
-        analyze_fans(user_data_dict)
+    while len(url_value_list) != 0:
+        threads = []
+        # 创建新线程
+        for num in xrange(len(url_value_list)):
+            name = 'Thread-' + str(num)
+            thread = MyThread(num, name, url_value_list[num])
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
         # time.sleep(random.randint(1, 2))
-        url_value = get_url_from_database()
+        thread_lock.acquire()
+        url_value_list = get_url_from_database()
+        thread_lock.release()
     # 爬取完成，终止程序
     crawler_db.close()
     print 'Done'
