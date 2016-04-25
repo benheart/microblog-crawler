@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # coding=utf-8
 import time
+
+import re
+import base62
 import requests
 import MySQLdb
-import random
-import sys
+# import random
+# import sys
 import threading
 from bs4 import BeautifulSoup
 
@@ -29,9 +32,9 @@ class MyThread(threading.Thread):
 
 
 def get_user_page(url):
-    cookies = ['_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=0h1ZIaTWu_DHQz; SUB=_2A256FBHYDeTxGeNG4lQX9SnJzjWIHXVZ9r-QrDV6PUNbvtAKLWvkkW1LHespqzEDhKK_FFvqoBQJwEHB0L1MrQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WWl2w5PECYleQSXim1uJFnV5JpX5KMt; SSOLoginState=1460691336; gsid_CTandWM=4udiCpOz5iJ2JOaNnwFL4oJZn91',
-               '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256FeWHDeRxGeNG41sX8C7Izz2IHXVZ-YvPrDV6PUJbstBeLWHykW1LHetUrXNuEV9Qw6BncCWfaYlYaN9XCQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5W1.RklowafO6dgkjgK47v5JpX5o2p; SUHB=0S7y4p4nR5kWXX; SSOLoginState=1460770263; gsid_CTandWM=4uHmCpOz56bqqt796KsNmoI9y77',
-               '_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=05iq6bhTk3SHvN; SUB=_2A256FZI6DeTxGeNG4lQX9SnJzjWIHXVZ-T5yrDV6PUJbstAKLWfwkW1LHeuaO79Kw2RYDagUMG1QJfsU_9EFaA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WWl2w5PECYleQSXim1uJFnV5JpX5o2p; SSOLoginState=1460789866; gsid_CTandWM=4ufzCpOz5ImkTPoE9BphMoJZn91',
+    cookies = ['_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=0D-Vuu386P4j2b; SUB=_2A256EfwgDeTxGeNG4lQX9y7Nwj6IHXVZ_YRorDV6PUJbstANLW3kkW1LHet05sdhgjwfNOR0ClMXPnS5SqdvIg..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WhBVrHIyWFlrYBZ4BOfMP1z5JpX5o2p; SSOLoginState=1461030000; gsid_CTandWM=4u60CpOz50N9V4Lc6vwoYoJZA36',
+               '_T_WM=70dba9cc1900b9d195872d0d5db0b77c; SUB=_2A256EfuLDeRxGeNG41sX8C7Izz2IHXVZ_YXDrDV6PUJbstAKLUr8kW1LHeuSg7S1a2KqfjtbJZS82riwBndvAw..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5W1.RklowafO6dgkjgK47v5JpX5o2p; SUHB=0h15PrOlW_F_k0; SSOLoginState=1461029851; gsid_CTandWM=4ub4CpOz5PNtLVUo5gSD0oI9y77',
+               '_T_WM=87c4880b888b3cc3de9172dcb377c48e; SUHB=0oU4fzjiURpcpO; gsid_CTandWM=4uOmCpOz5WzFQFpogujlxoKpB1s; SUB=_2A256EC9dDeTxGeNG4loT-C3MwjyIHXVZ-rEVrDV6PUJbstANLUn8kW1LHetNnf9SqvixCVNV_IBD_pQ7Gr6tqQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5aY-EDEL5TiJCLSWnvkWEM5JpX5o2p; SSOLoginState=1460952845',
                '_T_WM=87c4880b888b3cc3de9172dcb377c48e; SUHB=0z1QUob9PHGOv-; SUB=_2A256FkKXDeTxGeNG4loT-C3MwjyIHXVZ-W7frDV6PUJbstANLVr-kW1LHesGlTsYDsD7Cbk3hvFA1vxfj1lKaA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5aY-EDEL5TiJCLSWnvkWEM5JpX5o2p; SSOLoginState=1460810439; gsid_CTandWM=4uKQCpOz5KzYeSk8oBfcroKpB1s']
     # index = random.randint(0, 3)
     # print index
@@ -42,7 +45,7 @@ def get_user_page(url):
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept - Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
         'Accept - Encoding': 'gzip, deflate',
-        'Cookie': cookies[3],
+        'Cookie': cookies[1],
         'Connection': 'keep-alive'
     }
     # 发送请求获取响应页面
@@ -61,7 +64,7 @@ def get_url_from_database():
     url_value_list = []
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
-        sql = "select * from %s where url_status = 0 limit 10" % table_name
+        sql = "select * from %s where url_status = 0 limit 15" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
@@ -159,13 +162,12 @@ def insert_user_data(user_data_dict):
 def get_social_data(user_home_url):
     # 获取用户主页面
     soup = get_user_page(user_home_url)
-    while soup.title.string == '微博'.decode('utf-8'):
+    if soup.title.string == '微博'.decode('utf-8'):
         print '异常账户'
         thread_lock.acquire()
         change_url_status(user_home_url)
-        user_home_url = get_url_from_database()
         thread_lock.release()
-        soup = get_user_page(user_home_url)
+        exit(1)
     social_data_block = soup.find('div', attrs={'class': 'tip2'})
     # 新建用户社交信息字典
     user_data_dict = {'user_id': '',
@@ -218,6 +220,7 @@ def get_user_data(user_data_dict):
 
 
 def analyze_follow(user_data_dict):
+    follow_url_list = []
     # 获取关注总数
     follow_total = int(user_data_dict['follow'])
     # 由于微博只能获取前200关注用户，如果关注数大于200，将关注数设为200
@@ -236,7 +239,8 @@ def analyze_follow(user_data_dict):
         for i in range(0, len(follow_block) / 2):
             follow = follow_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(follow.get('href')):
-                insert_new_url(follow.get('href'))
+                # insert_new_url(follow.get('href'))
+                follow_url_list.append(follow.get('href'))
             # print follow.get('href')
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
@@ -248,11 +252,14 @@ def analyze_follow(user_data_dict):
         for i in range(0, len(follow_block) / 2):
             follow = follow_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(follow.get('href')):
-                insert_new_url(follow.get('href'))
+                # insert_new_url(follow.get('href'))
+                follow_url_list.append(follow.get('href'))
             # print follow.get('href')
+    return follow_url_list
 
 
 def analyze_fans(user_data_dict):
+    fans_url_list = []
     # 获取粉丝总数
     fans_total = int(user_data_dict['fans'])
     # 由于微博只能获取前200粉丝用户，如果粉丝数大于200，将粉丝数设为200
@@ -271,7 +278,8 @@ def analyze_fans(user_data_dict):
         for i in range(0, len(fans_block) / 2):
             fans = fans_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(fans.get('href')):
-                insert_new_url(fans.get('href'))
+                # insert_new_url(fans.get('href'))
+                fans_url_list.append(fans.get('href'))
             # print fans.get('href')
 
     # 如果最后一页非空，处理最后一页
@@ -284,8 +292,113 @@ def analyze_fans(user_data_dict):
         for i in range(0, len(fans_block) / 2):
             fans = fans_block[i * 2 + 1].find_all('a')[0]
             if url_in_database(fans.get('href')):
-                insert_new_url(fans.get('href'))
+                # insert_new_url(fans.get('href'))
+                fans_url_list.append(fans.get('href'))
             # print fans.get('href')
+    return fans_url_list
+
+
+def analyze_profile(user_data_dict):
+    profile_total = int(user_data_dict['profile'])
+    page_num = profile_total / 10
+    page_last = profile_total % 10
+    for num in xrange(1, page_num + 1):
+        download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/profile?page=' + str(num)
+        soup = get_user_page(download_url)
+        profile_block = soup.find_all('div', id=re.compile('^M_'))
+        profile_first = profile_block[0]
+        profile_last = profile_block[len(profile_block) - 1]
+        time_source_first = profile_first.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')[0]
+        time_source_last = profile_last.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')[0]
+        profile_time_first = 0
+        profile_time_last = 0
+        if len(time_source_first) == 16:
+            profile_time_temp = '2016年' + time_source_first
+            profile_time_first = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
+            profile_time_first = time.mktime(profile_time_first)
+        if len(time_source_last) == 16:
+            profile_time_temp = '2016年' + time_source_last
+            profile_time_last = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
+            profile_time_last = time.mktime(profile_time_last)
+        if profile_time_first >= 1451577600 or profile_time_last < 1459440000:
+            for profile in profile_block:
+                time_source = profile.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')
+                # print time_source
+                if len(time_source[0]) == 16:
+                    profile_time_temp = '2016年' + time_source[0]
+                    profile_time = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
+                    profile_time = time.mktime(profile_time)
+                    if 1451577600 <= profile_time < 1459440000:
+                        profile_mid = profile.get('id').split('_')[1]
+                        profile_id = base62.mid_to_id(profile_mid)
+                        profile_tmp = profile.find_all('div')
+                        profile_tmp = profile_tmp[len(profile_tmp) - 1].find_all('a')
+                        profile_info = []
+                        for profile_str in profile_tmp:
+                            if profile_str.string is not None:
+                                profile_str = profile_str.string.encode("utf-8")
+                                if re.search('[0-9]', profile_str) is not None:
+                                    num = filter(str.isdigit, profile_str)
+                                    profile_info.append(num)
+                        profile_like = profile_info[0]
+                        profile_forward = profile_info[1]
+                        profile_comment = profile_info[2]
+                        print 'mid:' + profile_id
+                        print '发布时间:' + str(profile_time)
+                        print '来源:' + time_source[1]
+                        print '点赞数:' + str(profile_like)
+                        print '转发数:' + profile_forward
+                        print '评论数:' + profile_comment
+        if profile_time_first < 1451577600:
+            break
+    # 如果最后一页非空，处理最后一页
+    if page_last != 0:
+        download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/profile?page=' + str(page_num + 1)
+        soup = get_user_page(download_url)
+        profile_block = soup.find_all('div', id=re.compile('^M_'))
+        profile_first = profile_block[0]
+        profile_last = profile_block[len(profile_block) - 1]
+        time_source_first = profile_first.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')[0]
+        time_source_last = profile_last.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')[0]
+        profile_time_first = 0
+        profile_time_last = 0
+        if len(time_source_first) == 16:
+            profile_time_temp = '2016年' + time_source_first
+            profile_time_first = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
+            profile_time_first = time.mktime(profile_time_first)
+        if len(time_source_last) == 16:
+            profile_time_temp = '2016年' + time_source_last
+            profile_time_last = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
+            profile_time_last = time.mktime(profile_time_last)
+        if profile_time_first >= 1451577600 or profile_time_last < 1459440000:
+            for profile in profile_block:
+                time_source = profile.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')
+                # print time_source
+                if len(time_source[0]) == 16:
+                    profile_time_temp = '2016年' + time_source[0]
+                    profile_time = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
+                    profile_time = time.mktime(profile_time)
+                    if 1451577600 <= profile_time < 1459440000:
+                        profile_mid = profile.get('id').split('_')[1]
+                        profile_id = base62.mid_to_id(profile_mid)
+                        profile_tmp = profile.find_all('div')
+                        profile_tmp = profile_tmp[len(profile_tmp) - 1].find_all('a')
+                        profile_info = []
+                        for profile_str in profile_tmp:
+                            if profile_str.string is not None:
+                                profile_str = profile_str.string.encode("utf-8")
+                                if re.search('[0-9]', profile_str) is not None:
+                                    num = filter(str.isdigit, profile_str)
+                                    profile_info.append(num)
+                        profile_like = profile_info[0]
+                        profile_forward = profile_info[1]
+                        profile_comment = profile_info[2]
+                        print 'mid:' + profile_id
+                        print '发布时间:' + str(profile_time)
+                        print '来源:' + time_source[1]
+                        print '点赞数:' + str(profile_like)
+                        print '转发数:' + profile_forward
+                        print '评论数:' + profile_comment
 
 
 def process_url(thread_name, url_value):
@@ -294,18 +407,20 @@ def process_url(thread_name, url_value):
     user_data_dict = get_social_data(url_value)
     # 获取用户资料
     user_data_dict = get_user_data(user_data_dict)
+    # # 爬取关注用户主页URL
+    # follow_url_list = analyze_follow(user_data_dict)
+    # # 爬取粉丝用户主页URL
+    # fans_url_list = analyze_fans(user_data_dict)
+    # # 用户主页URL
+    # url_list = follow_url_list + fans_url_list
+    # 爬取用户微博信息
+    # analyze_profile(user_data_dict)
 
     thread_lock.acquire()
     insert_user_data(user_data_dict)
     change_url_status(url_value)
+    # insert_new_url(url_list)
     thread_lock.release()
-
-    # print 'follow list:'
-    # # 爬取关注用户
-    # analyze_follow(user_data_dict)
-    # print 'fans_list:'
-    # # 爬取粉丝用户
-    # analyze_fans(user_data_dict)
 
 
 def main():
