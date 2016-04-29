@@ -14,7 +14,7 @@ def get_url_from_database():
     url_value_list = []
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
-        sql = "select * from %s where url_status = 0 limit 15" % table_name
+        sql = "select * from %s where url_status = 0 limit 7" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
@@ -91,8 +91,8 @@ def insert_user_data(user_data_dict):
     u_profile_num = user_data_dict['profile']
     u_follow_num = user_data_dict['follow']
     u_fans_num = user_data_dict['fans']
-    table_name = 'user_data' + str(int(u_id) % 32)
     # 将用户数据写入数据库
+    table_name = 'user_data' + str(int(u_id) % 32)
     user_data = (int(u_id), u_name, int(u_verified), int(u_gender), u_province, u_birthday,
                  int(u_profile_num), int(u_follow_num), int(u_fans_num))
     sql = "insert into " + table_name + " (u_id, u_name, u_verified, u_gender, u_province, u_birthday, " \
@@ -102,11 +102,38 @@ def insert_user_data(user_data_dict):
     try:
         cursor.execute(sql)
         crawler_db.commit()
-        print 'Insert user data to the database successfully! UID:' + u_id
+        print 'Insert user data to the database successfully! TABLE:%s UID:%s' % (table_name, u_id)
     except MySQLdb.Error, error_info:
-        print 'Fail to insert user data to the database! UID:' + u_id
+        print 'Fail to insert user data to the database! TABLE:%s UID:%s' % (table_name, u_id)
         print error_info
         crawler_db.rollback()
+
+
+def insert_profile_data(profile_info_list):
+    for profile_info in profile_info_list:
+        profile_id = profile_info['profile_id']
+        profile_uid = profile_info['profile_uid']
+        profile_time = profile_info['profile_time']
+        profile_source = profile_info['profile_source']
+        profile_like = profile_info['profile_like']
+        profile_forward = profile_info['profile_forward']
+        profile_comment = profile_info['profile_comment']
+        # 将用户微博信息写入数据库
+        table_name = 'profile_data' + str(int(profile_id) % 32)
+        profile_data = (int(profile_id), int(profile_uid), profile_time, profile_source,
+                        int(profile_like), int(profile_forward), int(profile_comment))
+        sql = "insert into " + table_name + " (p_id, p_uid, p_time, p_source, p_like, p_forward, p_comment)" \
+                                            " values (%d, %d, '%s', '%s', %d, %d, %d)" % profile_data
+        sql = sql.encode('utf-8')
+        print sql
+        try:
+            cursor.execute(sql)
+            crawler_db.commit()
+            print 'Insert profile data to the database successfully! TABLE:%s MID:%s' % (table_name, profile_id)
+        except MySQLdb.Error, error_info:
+            print 'Fail to insert profile data to the database! TABLE:%s MID:%s' % (table_name, profile_id)
+            print error_info
+            crawler_db.rollback()
 
 
 def close_crawler_db():

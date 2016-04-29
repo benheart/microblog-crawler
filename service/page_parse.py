@@ -78,6 +78,7 @@ def profile_page_parse(user_data_dict, profile_data_dict, profile_info_list, num
                     profile_forward = profile_info[1]
                     profile_comment = profile_info[2]
                     profile_data_dict['profile_id'] = profile_id
+                    profile_data_dict['profile_uid'] = user_data_dict['user_id']
                     profile_data_dict['profile_time'] = str(profile_time)
                     profile_data_dict['profile_source'] = time_source[1]
                     profile_data_dict['profile_like'] = str(profile_like)

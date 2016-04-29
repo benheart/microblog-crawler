@@ -129,6 +129,7 @@ def analyze_profile(user_data_dict):
     page_num = profile_total / 10
     page_last = profile_total % 10
     profile_data_dict = {'profile_id': '',
+                         'profile_uid': '',
                          'profile_time': '',
                          'profile_source': '',
                          'profile_like': '',
@@ -159,12 +160,13 @@ def process_url(thread_name, url_value):
     # # 用户主页URL
     # url_list = follow_url_list + fans_url_list
     # 爬取用户微博信息
-    # analyze_profile(user_data_dict)
+    profile_info_list = analyze_profile(user_data_dict)
 
     thread_lock.acquire()
     dao.insert_user_data(user_data_dict)
     dao.change_url_status(url_value)
     # insert_new_url(url_list)
+    dao.insert_profile_data(profile_info_list)
     thread_lock.release()
 
 
