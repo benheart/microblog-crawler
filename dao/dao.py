@@ -14,7 +14,7 @@ def get_url_from_database():
     url_value_list = []
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
-        sql = "select * from %s where url_status = 0 limit 7" % table_name
+        sql = "select * from %s where url_status = 0 limit 1" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
@@ -110,22 +110,24 @@ def insert_user_data(user_data_dict):
 
 
 def insert_profile_data(profile_info_list):
-    for profile_info in profile_info_list:
-        profile_id = profile_info['profile_id']
-        profile_uid = profile_info['profile_uid']
-        profile_time = profile_info['profile_time']
-        profile_source = profile_info['profile_source']
-        profile_like = profile_info['profile_like']
-        profile_forward = profile_info['profile_forward']
-        profile_comment = profile_info['profile_comment']
+    print profile_info_list
+    for profile_data_dict in profile_info_list:
+        print profile_data_dict
+        profile_id = profile_data_dict['profile_id']
+        profile_uid = profile_data_dict['profile_uid']
+        profile_time = profile_data_dict['profile_time']
+        profile_source = profile_data_dict['profile_source']
+        profile_like = profile_data_dict['profile_like']
+        profile_forward = profile_data_dict['profile_forward']
+        profile_comment = profile_data_dict['profile_comment']
         # 将用户微博信息写入数据库
         table_name = 'profile_data' + str(int(profile_id) % 32)
         profile_data = (int(profile_id), int(profile_uid), profile_time, profile_source,
                         int(profile_like), int(profile_forward), int(profile_comment))
         sql = "insert into " + table_name + " (p_id, p_uid, p_time, p_source, p_like, p_forward, p_comment)" \
                                             " values (%d, %d, '%s', '%s', %d, %d, %d)" % profile_data
-        sql = sql.encode('utf-8')
         print sql
+        # sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
             crawler_db.commit()

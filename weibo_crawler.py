@@ -100,7 +100,7 @@ def analyze_follow(user_data_dict):
         follow_url_list = page_parse.follow_page_parse(user_data_dict, follow_url_list, num)
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
-        follow_url_list.append(page_parse.follow_page_parse(user_data_dict, follow_url_list, (page_num + 1)))
+        follow_url_list.append(page_parse.follow_page_parse(user_data_dict, follow_url_list, page_num))
     return follow_url_list
 
 
@@ -119,7 +119,7 @@ def analyze_fans(user_data_dict):
         fans_url_list = page_parse.fans_page_parse(user_data_dict, fans_url_list, num)
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
-        fans_url_list.append(page_parse.fans_page_parse(user_data_dict, fans_url_list, (page_num + 1)))
+        fans_url_list.append(page_parse.fans_page_parse(user_data_dict, fans_url_list, page_num))
     return fans_url_list
 
 
@@ -127,23 +127,12 @@ def analyze_profile(user_data_dict):
     profile_info_list = []
     profile_total = int(user_data_dict['profile'])
     page_num = profile_total / 10
-    page_last = profile_total % 10
-    profile_data_dict = {'profile_id': '',
-                         'profile_uid': '',
-                         'profile_time': '',
-                         'profile_source': '',
-                         'profile_like': '',
-                         'profile_forward': '',
-                         'profile_comment': ''}
     for num in xrange(1, page_num + 1):
-        result = page_parse.profile_page_parse(user_data_dict, profile_data_dict, profile_info_list, num)
-        profile_info_list = result[0]
-        if result[2] < 1451577600:
+        result = page_parse.profile_page_parse(user_data_dict, num)
+        if result[0] != '':
+            profile_info_list += result[0]
+        if result[1] < 1459440000:
             break
-    # 如果最后一页非空，处理最后一页
-    if page_last != 0:
-        result = page_parse.profile_page_parse(user_data_dict, profile_data_dict, profile_info_list, (page_num + 1))
-        profile_info_list.append(result[0])
     return profile_info_list
 
 
@@ -160,13 +149,13 @@ def process_url(thread_name, url_value):
     # # 用户主页URL
     # url_list = follow_url_list + fans_url_list
     # 爬取用户微博信息
-    profile_info_list = analyze_profile(user_data_dict)
+    # profile_info_list = analyze_profile(user_data_dict)
 
     thread_lock.acquire()
     dao.insert_user_data(user_data_dict)
     dao.change_url_status(url_value)
     # insert_new_url(url_list)
-    dao.insert_profile_data(profile_info_list)
+    # dao.insert_profile_data(profile_info_list)
     thread_lock.release()
 
 

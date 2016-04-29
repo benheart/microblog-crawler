@@ -36,14 +36,16 @@ def fans_page_parse(user_data_dict, fans_url_list, num):
     return fans_url_list
 
 
-def profile_page_parse(user_data_dict, profile_data_dict, profile_info_list, num):
+def profile_page_parse(user_data_dict, num):
+    profile_info_list = []
     download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/profile?page=' + str(num)
+    print download_url
     soup = pageutil.get_soup_from_page(download_url)
     profile_block = soup.find_all('div', id=re.compile('^M_'))
     profile_first = profile_block[0]
     profile_last = profile_block[len(profile_block) - 1]
-    time_source_first = profile_first.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')[0]
-    time_source_last = profile_last.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')[0]
+    time_source_first = profile_first.find('span', attrs={'class': 'ct'}).contents[0].encode("utf-8").split(' 来自')[0]
+    time_source_last = profile_last.find('span', attrs={'class': 'ct'}).contents[0].encode("utf-8").split(' 来自')[0]
     profile_time_first = 0
     profile_time_last = 0
     if len(time_source_first) == 16:
@@ -54,15 +56,31 @@ def profile_page_parse(user_data_dict, profile_data_dict, profile_info_list, num
         profile_time_temp = '2016年' + time_source_last
         profile_time_last = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
         profile_time_last = time.mktime(profile_time_last)
-    if profile_time_first >= 1451577600 or profile_time_last < 1459440000:
+    if profile_time_first >= 1459440000 or profile_time_last < 1461859200:
         for profile in profile_block:
-            time_source = profile.find('span', attrs={'class': 'ct'}).string.encode("utf-8").split(' 来自')
+            profile_data_dict = {'profile_id': '',
+                                 'profile_uid': '',
+                                 'profile_time': '',
+                                 'profile_source': '',
+                                 'profile_like': '',
+                                 'profile_forward': '',
+                                 'profile_comment': ''}
+            print profile.find('span', attrs={'class': 'ct'}).contents
+            time_source = profile.find('span', attrs={'class': 'ct'}).contents[0].encode("utf-8").split(' 来自')
+            if len(profile.find('span', attrs={'class': 'ct'}).contents) == 1:
+                if len(time_source) == 2:
+                    profile_source = time_source[1]
+                else:
+                    profile_source = ""
+            else:
+                profile_source = profile.find('span', attrs={'class': 'ct'}).contents[1].string
+            profile_source = profile_source.replace("'", "")
             # print time_source
             if len(time_source[0]) == 16:
                 profile_time_temp = '2016年' + time_source[0]
                 profile_time = time.strptime(profile_time_temp, '%Y\xe5\xb9\xb4%m\xe6\x9c\x88%d\xe6\x97\xa5 %H:%M')
                 profile_time = time.mktime(profile_time)
-                if 1451577600 <= profile_time < 1459440000:
+                if 1459440000 <= profile_time < 1461859200:
                     profile_mid = profile.get('id').split('_')[1]
                     profile_id = base62.mid_to_id(profile_mid)
                     profile_tmp = profile.find_all('div')
@@ -77,12 +95,14 @@ def profile_page_parse(user_data_dict, profile_data_dict, profile_info_list, num
                     profile_like = profile_info[0]
                     profile_forward = profile_info[1]
                     profile_comment = profile_info[2]
-                    profile_data_dict['profile_id'] = profile_id
+                    profile_data_dict['profile_id'] = str(profile_id)
                     profile_data_dict['profile_uid'] = user_data_dict['user_id']
-                    profile_data_dict['profile_time'] = str(profile_time)
-                    profile_data_dict['profile_source'] = time_source[1]
+                    profile_data_dict['profile_time'] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(profile_time))
+                    profile_data_dict['profile_source'] = profile_source
                     profile_data_dict['profile_like'] = str(profile_like)
-                    profile_data_dict['profile_forward'] = profile_forward
-                    profile_data_dict['profile_comment'] = profile_comment
+                    profile_data_dict['profile_forward'] = str(profile_forward)
+                    profile_data_dict['profile_comment'] = str(profile_comment)
+                    print profile_data_dict
                     profile_info_list.append(profile_data_dict)
-    return [profile_info_list, profile_time_first]
+        return [profile_info_list, profile_time_first]
+    return ['', profile_time_first]
