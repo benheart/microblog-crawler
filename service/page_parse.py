@@ -42,6 +42,8 @@ def profile_page_parse(user_data_dict, num):
     print download_url
     soup = pageutil.get_soup_from_page(download_url)
     profile_block = soup.find_all('div', id=re.compile('^M_'))
+    if len(profile_block) == 0:
+        return [profile_info_list, 1459440001]
     profile_first = profile_block[0]
     profile_last = profile_block[len(profile_block) - 1]
     time_source_first = profile_first.find('span', attrs={'class': 'ct'}).contents[0].encode("utf-8").split(' 来自')[0]
@@ -58,14 +60,7 @@ def profile_page_parse(user_data_dict, num):
         profile_time_last = time.mktime(profile_time_last)
     if profile_time_first >= 1459440000 or profile_time_last < 1461859200:
         for profile in profile_block:
-            profile_data_dict = {'profile_id': '',
-                                 'profile_uid': '',
-                                 'profile_time': '',
-                                 'profile_source': '',
-                                 'profile_like': '',
-                                 'profile_forward': '',
-                                 'profile_comment': ''}
-            print profile.find('span', attrs={'class': 'ct'}).contents
+            # print profile.find('span', attrs={'class': 'ct'}).contents
             time_source = profile.find('span', attrs={'class': 'ct'}).contents[0].encode("utf-8").split(' 来自')
             if len(profile.find('span', attrs={'class': 'ct'}).contents) == 1:
                 if len(time_source) == 2:
@@ -85,24 +80,24 @@ def profile_page_parse(user_data_dict, num):
                     profile_id = base62.mid_to_id(profile_mid)
                     profile_tmp = profile.find_all('div')
                     profile_tmp = profile_tmp[len(profile_tmp) - 1].find_all('a')
-                    profile_info = []
-                    for profile_str in profile_tmp:
-                        if profile_str.string is not None:
-                            profile_str = profile_str.string.encode("utf-8")
-                            if re.search('[0-9]', profile_str) is not None:
-                                num = filter(str.isdigit, profile_str)
-                                profile_info.append(num)
-                    profile_like = profile_info[0]
-                    profile_forward = profile_info[1]
-                    profile_comment = profile_info[2]
-                    profile_data_dict['profile_id'] = str(profile_id)
-                    profile_data_dict['profile_uid'] = user_data_dict['user_id']
-                    profile_data_dict['profile_time'] = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(profile_time))
-                    profile_data_dict['profile_source'] = profile_source
-                    profile_data_dict['profile_like'] = str(profile_like)
-                    profile_data_dict['profile_forward'] = str(profile_forward)
-                    profile_data_dict['profile_comment'] = str(profile_comment)
+
+                    if len(profile.find('span', attrs={'class': 'ct'}).contents) == 1:
+                        profile_like = filter(str.isdigit, profile_tmp[len(profile_tmp) - 4].string.encode("utf-8"))
+                        profile_forward = filter(str.isdigit, profile_tmp[len(profile_tmp) - 3].string.encode("utf-8"))
+                        profile_comment = filter(str.isdigit, profile_tmp[len(profile_tmp) - 2].string.encode("utf-8"))
+                    else:
+                        profile_like = filter(str.isdigit, profile_tmp[len(profile_tmp) - 5].string.encode("utf-8"))
+                        profile_forward = filter(str.isdigit, profile_tmp[len(profile_tmp) - 4].string.encode("utf-8"))
+                        profile_comment = filter(str.isdigit, profile_tmp[len(profile_tmp) - 3].string.encode("utf-8"))
+
+                    profile_data_dict = {'profile_id': str(profile_id),
+                                         'profile_uid': user_data_dict['user_id'],
+                                         'profile_time': time.strftime('%Y-%m-%d %H:%M:%S',
+                                                                       time.localtime(profile_time)),
+                                         'profile_source': profile_source, 'profile_like': str(profile_like),
+                                         'profile_forward': str(profile_forward),
+                                         'profile_comment': str(profile_comment)}
                     print profile_data_dict
                     profile_info_list.append(profile_data_dict)
         return [profile_info_list, profile_time_first]
-    return ['', profile_time_first]
+    return [profile_info_list, profile_time_first]

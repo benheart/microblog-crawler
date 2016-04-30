@@ -25,6 +25,18 @@ class MyThread(threading.Thread):
         print "Exiting " + self.thread_name
 
 
+class ProfileThread(threading.Thread):
+    def __init__(self, thread_id, thread_name, user_data_dict):
+        threading.Thread.__init__(self)
+        self.thread_id = thread_id
+        self.thread_name = thread_name
+        self.user_data_dict = user_data_dict
+
+    def run(self):
+        process_verified_user(self.thread_name, self.user_data_dict)
+        print "Exiting " + self.thread_name
+
+
 def get_social_data(user_home_url):
     # 获取用户主页面
     soup = pageutil.get_soup_from_page(user_home_url)
@@ -129,7 +141,7 @@ def analyze_profile(user_data_dict):
     page_num = profile_total / 10
     for num in xrange(1, page_num + 1):
         result = page_parse.profile_page_parse(user_data_dict, num)
-        if result[0] != '':
+        if len(result[0]) != 0:
             profile_info_list += result[0]
         if result[1] < 1459440000:
             break
@@ -154,28 +166,63 @@ def process_url(thread_name, url_value):
     thread_lock.acquire()
     dao.insert_user_data(user_data_dict)
     dao.change_url_status(url_value)
-    # insert_new_url(url_list)
+    # dao.insert_new_url(url_list)
     # dao.insert_profile_data(profile_info_list)
     thread_lock.release()
 
 
-def main():
-    url_value_list = dao.get_url_from_database()
-    # 根据URL等待队列循环爬取用户信息
-    while len(url_value_list) != 0:
-        threads = []
-        # 创建新线程
-        for num in xrange(len(url_value_list)):
-            name = 'Thread-' + str(num)
-            thread = MyThread(num, name, url_value_list[num])
-            thread.start()
-            threads.append(thread)
-        for thread in threads:
-            thread.join()
-        # time.sleep(random.randint(1, 2))
-        thread_lock.acquire()
+def process_verified_user(thread_name, user_data_dict):
+    print "%s processing verified u_id: %s" % (thread_name, user_data_dict['user_id'])
+    # 爬取用户微博信息
+    profile_info_list = analyze_profile(user_data_dict)
+
+    thread_lock.acquire()
+    dao.insert_profile_data(profile_info_list)
+    dao.change_user_status(user_data_dict['user_id'])
+    thread_lock.release()
+
+
+def choose_crawler_mode(crawler_mode):
+    if crawler_mode == 1:
         url_value_list = dao.get_url_from_database()
-        thread_lock.release()
+        # 根据URL等待队列循环爬取用户信息
+        while len(url_value_list) != 0:
+            threads = []
+            # 创建新线程
+            for num in xrange(len(url_value_list)):
+                name = 'Thread-' + str(num)
+                thread = MyThread(num, name, url_value_list[num])
+                thread.start()
+                threads.append(thread)
+            for thread in threads:
+                thread.join()
+            # time.sleep(random.randint(1, 2))
+            thread_lock.acquire()
+            url_value_list = dao.get_url_from_database()
+            thread_lock.release()
+
+    if crawler_mode == 2:
+        verified_user_list = dao.get_verified_user()
+        # 根据URL等待队列循环爬取用户信息
+        while len(verified_user_list) != 0:
+            threads = []
+            # 创建新线程
+            for num in xrange(len(verified_user_list)):
+                name = 'Thread-' + str(num)
+                thread = ProfileThread(num, name, verified_user_list[num])
+                thread.start()
+                threads.append(thread)
+            for thread in threads:
+                thread.join()
+            # time.sleep(random.randint(1, 2))
+            thread_lock.acquire()
+            verified_user_list = dao.get_verified_user()
+            thread_lock.release()
+
+
+def main():
+    crawler_mode = 2
+    choose_crawler_mode(crawler_mode)
     # 爬取完成，终止程序
     dao.close_crawler_db()
     print 'Done'

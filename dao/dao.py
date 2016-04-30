@@ -31,6 +31,27 @@ def get_url_from_database():
     return url_value_list
 
 
+def get_verified_user():
+    verified_user_list = []
+    for index in range(0, 32):
+        table_name = 'user_data' + str(index)
+        sql = "select u_id, u_profile_num from %s where u_status = 0 and u_verified = 1 limit 1" % table_name
+        sql = sql.encode('utf-8')
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            if len(results) != 0:
+                for row in results:
+                    user_data_dict = {'user_id': str(row[0]), 'profile': str(row[1])}
+                    verified_user_list.append(user_data_dict)
+                return verified_user_list
+        except MySQLdb.Error, error_info:
+            print error_info
+            crawler_db.rollback()
+            return verified_user_list
+    return verified_user_list
+
+
 def change_url_status(url_value):
     url_id = hash(url_value)
     table_name = 'url_data' + str(url_id % 32)
@@ -42,6 +63,20 @@ def change_url_status(url_value):
         print 'Change url status successfully! Url_id:' + str(url_id)
     except MySQLdb.Error, error_info:
         print 'Fail to change url status! Url:' + url_value
+        print error_info
+        crawler_db.rollback()
+
+
+def change_user_status(u_id):
+    table_name = 'user_data' + str(int(u_id) % 32)
+    sql = "update %s set u_status = %s where u_id = %s" % (table_name, str(FINISH_STATUS), u_id)
+    sql = sql.encode('utf-8')
+    try:
+        cursor.execute(sql)
+        crawler_db.commit()
+        print 'Change user status successfully! u_id:' + u_id
+    except MySQLdb.Error, error_info:
+        print 'Fail to change user status! u_id:' + u_id
         print error_info
         crawler_db.rollback()
 
@@ -110,9 +145,7 @@ def insert_user_data(user_data_dict):
 
 
 def insert_profile_data(profile_info_list):
-    print profile_info_list
     for profile_data_dict in profile_info_list:
-        print profile_data_dict
         profile_id = profile_data_dict['profile_id']
         profile_uid = profile_data_dict['profile_uid']
         profile_time = profile_data_dict['profile_time']
