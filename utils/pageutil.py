@@ -5,10 +5,10 @@ from bs4 import BeautifulSoup
 
 
 def get_soup_from_page(url):
-    cookies = ['_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=0D-Vuu386P1-LF; SUB=_2A256JqR-DeTxGeNG4lQX9y7Nwj6IHXVZ6Mw2rDV6PUJbstBeLVT1kW1LHeuQ9ZtGXttHopsCt44OquoEYnXeSg..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WhBVrHIyWFlrYBZ4BOfMP1z5JpX5o2p; SSOLoginState=1461900334',
-               '_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=0h15PrOlW_H-Ss; SUB=_2A256IG_2DeRxGeNG41sX8C7Izz2IHXVZ63G-rDV6PUJbrdBeLWr5kW1LHetQ9YY_4RNTeT7MSUMpwxWcsi1PRQ..; SSOLoginState=1461985190; gsid_CTandWM=4uHRCpOz56xslm7mYjjDMoI9y77; M_WEIBOCN_PARAMS=uicode%3D20000174',
-               '_T_WM=87c4880b888b3cc3de9172dcb377c48e; SUHB=0oU4fzjiURpcpO; gsid_CTandWM=4uOmCpOz5WzFQFpogujlxoKpB1s; SUB=_2A256EC9dDeTxGeNG4loT-C3MwjyIHXVZ-rEVrDV6PUJbstANLUn8kW1LHetNnf9SqvixCVNV_IBD_pQ7Gr6tqQ..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5aY-EDEL5TiJCLSWnvkWEM5JpX5o2p; SSOLoginState=1460952845',
-               '_T_WM=87c4880b888b3cc3de9172dcb377c48e; SUHB=0z1QUob9PHGOv-; SUB=_2A256FkKXDeTxGeNG4loT-C3MwjyIHXVZ-W7frDV6PUJbstANLVr-kW1LHesGlTsYDsD7Cbk3hvFA1vxfj1lKaA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5aY-EDEL5TiJCLSWnvkWEM5JpX5o2p; SSOLoginState=1460810439; gsid_CTandWM=4uKQCpOz5KzYeSk8oBfcroKpB1s']
+    cookies = ['SUHB=0YhB9PJa8g9D5o; _T_WM=2c5076056c7618df0a9e39e87f6a597b; gsid_CTandWM=4uhJCpOz5pqzezLIIKQD8oKpB1s; SUB=_2A256IMcXDeTxGeNG4loT-C3MwjyIHXVZ6ulfrDV6PUJbstAKLUajkW1LHes4kxPjmtsKp3m4BtGVGWZF-0X1oA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5aY-EDEL5TiJCLSWnvkWEM5JpX5o2p; SSOLoginState=1462024007',
+               '_T_WM=93d448cea0c92fcbc8b7201790ab9213; SUHB=0h15PrOlW_H-Ss; SUB=_2A256IG_2DeRxGeNG41sX8C7Izz2IHXVZ63G-rDV6PUJbrdBeLWr5kW1LHetQ9YY_4RNTeT7MSUMpwxWcsi1PRQ..; SSOLoginState=1461985190; gsid_CTandWM=4uauCpOz5uUztZ3EeRuqVoI9y77',
+               '_T_WM=87c4880b888b3cc3de9172dcb377c48e; SUHB=0OM0LThy-OKkqg; SUB=_2A256IBSNDeTxGeVK6lIZ9ifKyDyIHXVZ6rzFrDV6PUJbstBeLUHbkW1LHet6nK0npR6IqMP_Vz3JlzBpdx65jg..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WWnXoUopTNdHQSvkKJZR8.R5JpX5o2p; SSOLoginState=1462002909',
+               '_T_WM=87c4880b888b3cc3de9172dcb377c48e; SUHB=0nl-btWBYkMmpX; SUB=_2A256INSVDeTxGeVK6lIZ9ifKyDyIHXVZ6vzdrDV6PUNbvtBeLVj1kW1LHet7tzGRpJnD1AguD4JxqK49noPnfw..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WWnXoUopTNdHQSvkKJZR8.R5JpX5KMt; SSOLoginState=1462019269; gsid_CTandWM=4ujhCpOz5hQslaYExXbRiejk1aa']
     # index = random.randint(0, 3)
     # print index
     # 将User-Agent伪装成浏览器
@@ -18,7 +18,7 @@ def get_soup_from_page(url):
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept - Language': 'zh-CN,zh;q=0.8,en-US;q=0.5,en;q=0.3',
         'Accept - Encoding': 'gzip, deflate',
-        'Cookie': cookies[1],
+        'Cookie': cookies[0],
         'Connection': 'keep-alive'
     }
     # 发送请求获取响应页面
