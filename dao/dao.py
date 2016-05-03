@@ -35,7 +35,7 @@ def get_verified_user():
     verified_user_list = []
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
-        sql = "select u_id, u_profile_num from %s where u_status = 0 and u_verified = 1 limit 1" % table_name
+        sql = "select u_id, u_profile_num from %s where u_status = 0 and u_verified = 1 limit 3" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)

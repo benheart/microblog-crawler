@@ -40,24 +40,31 @@ def gender_draw():
 def province_draw():
     labels = []
     user_num = []
-    # Read data
+    # 从省份字典中读取数据
     province_dict = data_count.province_num()
     for province in sorted(province_dict.items(), cmp=lambda x, y: cmp(x[1], y[1]), reverse=True):
         labels.append(province[0])
         user_num.append(province[1])
-
+    # 获取数据组数
     n_groups = len(user_num)
-
+    # 设置图像名称、大小
     plt.figure(3, figsize=(16, 8))
     index = np.arange(n_groups)
+    # 设置柱宽
     bar_width = 0.5
+    # 颜色透明度
     opacity = 0.7
-    plt.bar(index + bar_width/2, user_num, bar_width, alpha=opacity, color='orange', label='province')
+    # 设置柱状的位置、数值、柱宽、颜色透明度、颜色、标签
+    plt.bar(index + bar_width, user_num, bar_width, alpha=opacity, color='orange', label=u'省份')
+    # 设置x,y轴范围
+    plt.ylim(0, max(user_num) + 1000)
+    plt.xlim(0, len(user_num) + 0.5)
+    # 设置x轴标签以及标签的位置
+    plt.xticks(index + bar_width * 1.5, labels)
+    # 设置x,y坐标含义、图像标题
     plt.xlabel(u'省份名称')
     plt.ylabel(u'用户数量')
     plt.title(u'用户省份分布')
-    plt.xticks(index + bar_width, labels)
-    plt.ylim(0, max(user_num) + 1000)
     plt.legend()
     plt.tight_layout()
     plt.show()
