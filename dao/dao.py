@@ -2,19 +2,21 @@
 # coding=utf-8
 import MySQLdb
 from utils import dbutil
+from utils import logutil
 
 WAIT_STATUS = 0
 FINISH_STATUS = 1
 
 crawler_db = dbutil.get_cursor_db()
 cursor = crawler_db.cursor()
+logger = logutil.get_logger()
 
 
 def get_url_from_database():
     url_value_list = []
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
-        sql = "select * from %s where url_status = 0 limit 1" % table_name
+        sql = "select * from %s where url_status = 0 limit 2" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
@@ -25,7 +27,7 @@ def get_url_from_database():
                     url_value_list.append(url_value)
                 return url_value_list
         except MySQLdb.Error, error_info:
-            print error_info
+            logger.error(error_info)
             crawler_db.rollback()
             return url_value_list
     return url_value_list
@@ -35,7 +37,7 @@ def get_verified_user():
     verified_user_list = []
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
-        sql = "select u_id, u_profile_num from %s where u_status = 0 and u_verified = 1 limit 3" % table_name
+        sql = "select u_id, u_profile_num from %s where u_status = 0 and u_verified = 1 limit 12" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
@@ -46,7 +48,7 @@ def get_verified_user():
                     verified_user_list.append(user_data_dict)
                 return verified_user_list
         except MySQLdb.Error, error_info:
-            print error_info
+            logger.error(error_info)
             crawler_db.rollback()
             return verified_user_list
     return verified_user_list
@@ -60,10 +62,10 @@ def change_url_status(url_value):
     try:
         cursor.execute(sql)
         crawler_db.commit()
-        print 'Change url status successfully! Url_id:' + str(url_id)
+        logger.info('Change url status successfully! TABLE:%s URL:%s' % (table_name, url_value))
     except MySQLdb.Error, error_info:
-        print 'Fail to change url status! Url:' + url_value
-        print error_info
+        logger.warning('Fail to change url status! TABLE:%s URL:%s' % (table_name, url_value))
+        logger.error(error_info)
         crawler_db.rollback()
 
 
@@ -74,27 +76,29 @@ def change_user_status(u_id):
     try:
         cursor.execute(sql)
         crawler_db.commit()
-        print 'Change user status successfully! u_id:' + u_id
+        logger.info('Change user status successfully! TABLE:%s UID:%d' % (table_name, u_id))
     except MySQLdb.Error, error_info:
-        print 'Fail to change user status! u_id:' + u_id
-        print error_info
+        logger.warning('Fail to change user status! TABLE:%s UID:%d' % (table_name, u_id))
+        logger.error(error_info)
         crawler_db.rollback()
 
 
-def insert_new_url(url_value):
-    url_id = hash(url_value)
-    table_name = 'url_data' + str(url_id % 32)
-    sql = "insert into %s (url_id, url_value, url_status) values (%s, '%s', %s)" % \
-          (table_name, str(url_id), url_value, str(WAIT_STATUS))
-    sql = sql.encode('utf-8')
-    try:
-        cursor.execute(sql)
-        crawler_db.commit()
-        print 'Insert url data to the database successfully! Url_id:' + str(url_id)
-    except MySQLdb.Error, error_info:
-        print 'Fail to insert url data to the database! Url:' + url_value
-        print error_info
-        crawler_db.rollback()
+def insert_new_url(url_list):
+    for url_value in url_list:
+        if url_in_database(url_value):
+            url_id = hash(url_value)
+            table_name = 'url_data' + str(url_id % 32)
+            sql = "insert into %s (url_id, url_value, url_status) values (%s, '%s', %s)" % \
+                  (table_name, str(url_id), url_value, str(WAIT_STATUS))
+            sql = sql.encode('utf-8')
+            try:
+                cursor.execute(sql)
+                crawler_db.commit()
+                logger.info('Insert url data to the database successfully! TABLE:%s URL:%s' % (table_name, url_value))
+            except MySQLdb.Error, error_info:
+                logger.warning('Fail to insert url data to the database! TABLE:%s URL:%s' % (table_name, url_value))
+                logger.error(error_info)
+                crawler_db.rollback()
 
 
 def url_in_database(url_value):
@@ -106,12 +110,12 @@ def url_in_database(url_value):
         cursor.execute(sql)
         results = cursor.fetchall()
         if len(results) != 0:
-            print 'URL: ' + url_value + ' already exist in db!'
+            logger.info("URL:%s already exist in TABLE:%s!" % (url_value, table_name))
             return False
         else:
             return True
     except MySQLdb.Error, error_info:
-        print error_info
+        logger.error(error_info)
         crawler_db.rollback()
 
 
@@ -132,15 +136,15 @@ def insert_user_data(user_data_dict):
                  int(u_profile_num), int(u_follow_num), int(u_fans_num))
     sql = "insert into " + table_name + " (u_id, u_name, u_verified, u_gender, u_province, u_birthday, " \
           "u_profile_num, u_follow_num, u_fans_num) values (%d, '%s', %d, %d, '%s', '%s', %d, %d, %d)" % user_data
+    logger.info("SQL:" + sql)
     sql = sql.encode('utf-8')
-    print sql
     try:
         cursor.execute(sql)
         crawler_db.commit()
-        print 'Insert user data to the database successfully! TABLE:%s UID:%s' % (table_name, u_id)
+        logger.info('Insert user data to the database successfully! TABLE:%s UID:%s' % (table_name, u_id))
     except MySQLdb.Error, error_info:
-        print 'Fail to insert user data to the database! TABLE:%s UID:%s' % (table_name, u_id)
-        print error_info
+        logger.warning('Fail to insert user data to the database! TABLE:%s UID:%s' % (table_name, u_id))
+        logger.error(error_info)
         crawler_db.rollback()
 
 
@@ -159,15 +163,15 @@ def insert_profile_data(profile_info_list):
                         int(profile_like), int(profile_forward), int(profile_comment))
         sql = "insert into " + table_name + " (p_id, p_uid, p_time, p_source, p_like, p_forward, p_comment)" \
                                             " values (%d, %d, '%s', '%s', %d, %d, %d)" % profile_data
-        print sql
+        logger.info("SQL:" + sql)
         # sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
             crawler_db.commit()
-            print 'Insert profile data to the database successfully! TABLE:%s MID:%s' % (table_name, profile_id)
+            logger.info('Insert profile data to the database successfully! TABLE:%s MID:%s' % (table_name, profile_id))
         except MySQLdb.Error, error_info:
-            print 'Fail to insert profile data to the database! TABLE:%s MID:%s' % (table_name, profile_id)
-            print error_info
+            logger.warning('Fail to insert profile data to the database! TABLE:%s MID:%s' % (table_name, profile_id))
+            logger.error(error_info)
             crawler_db.rollback()
 
 

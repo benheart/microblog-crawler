@@ -4,42 +4,41 @@ import time
 import re
 from utils import base62
 from utils import pageutil
-from dao import dao
+from utils import logutil
+
+logger = logutil.get_logger()
 
 
-def follow_page_parse(user_data_dict, follow_url_list, num):
+def follow_page_parse(user_data_dict, num):
+    follow_url_list = []
     download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/follow?page=' + str(num)
-    # print download_url
+    logger.info("Processing follow URL:" + download_url)
     soup = pageutil.get_soup_from_page(download_url)
     follow_block = soup.find_all('td', attrs={'valign': 'top'})
     # 逐行处理当前页面关注用户
     for i in range(0, len(follow_block) / 2):
         follow = follow_block[i * 2 + 1].find_all('a')[0]
-        if dao.url_in_database(follow.get('href')):
-            # insert_new_url(follow.get('href'))
-            follow_url_list.append(follow.get('href'))
+        follow_url_list.append(follow.get('href'))
     return follow_url_list
 
 
-def fans_page_parse(user_data_dict, fans_url_list, num):
+def fans_page_parse(user_data_dict, num):
+    fans_url_list = []
     download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/fans?page=' + str(num)
-    # print download_url
+    logger.info("Processing fans URL:" + download_url)
     soup = pageutil.get_soup_from_page(download_url)
     fans_block = soup.find_all('td', attrs={'valign': 'top'})
     # 逐行处理当前页面粉丝用户
     for i in range(0, len(fans_block) / 2):
         fans = fans_block[i * 2 + 1].find_all('a')[0]
-        if dao.url_in_database(fans.get('href')):
-            # insert_new_url(fans.get('href'))
-            fans_url_list.append(fans.get('href'))
-            # print fans.get('href')
+        fans_url_list.append(fans.get('href'))
     return fans_url_list
 
 
 def profile_page_parse(user_data_dict, num):
     profile_info_list = []
     download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/profile?page=' + str(num)
-    print download_url
+    logger.info("Processing profile URL:" + download_url)
     soup = pageutil.get_soup_from_page(download_url)
     profile_block = soup.find_all('div', id=re.compile('^M_'))
     if len(profile_block) == 0:

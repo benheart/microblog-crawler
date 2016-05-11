@@ -8,9 +8,11 @@ import threading
 from service import page_parse
 from utils import pageutil
 from dao import dao
+from utils import logutil
 
 # 定义全局变量
 thread_lock = threading.Lock()
+logger = logutil.get_logger()
 
 
 class MyThread(threading.Thread):
@@ -22,7 +24,7 @@ class MyThread(threading.Thread):
 
     def run(self):
         process_url(self.thread_name, self.url_value)
-        print "Exiting " + self.thread_name
+        logger.info("Exiting " + self.thread_name)
 
 
 class ProfileThread(threading.Thread):
@@ -34,14 +36,14 @@ class ProfileThread(threading.Thread):
 
     def run(self):
         process_verified_user(self.thread_name, self.user_data_dict)
-        print "Exiting " + self.thread_name
+        logger.info("Exiting " + self.thread_name)
 
 
 def get_social_data(user_home_url):
     # 获取用户主页面
     soup = pageutil.get_soup_from_page(user_home_url)
     if soup.title.string == '微博'.decode('utf-8'):
-        print '异常账户'
+        logger.warn('异常账户')
         thread_lock.acquire()
         dao.change_url_status(user_home_url)
         thread_lock.release()
@@ -93,7 +95,6 @@ def get_user_data(user_data_dict):
         user_data_dict['地区'.decode('utf-8')] = user_province
     if len(user_data_dict['生日'.decode('utf-8')]) != 10:
         user_data_dict['生日'.decode('utf-8')] = '0001-00-00'
-    print user_data_dict['昵称'.decode('utf-8')]
     return user_data_dict
 
 
@@ -109,10 +110,10 @@ def analyze_follow(user_data_dict):
     page_last = follow_total % 10
     # 循环每页爬取关注用户
     for num in range(1, page_num + 1):
-        follow_url_list = page_parse.follow_page_parse(user_data_dict, follow_url_list, num)
+        follow_url_list += page_parse.follow_page_parse(user_data_dict, num)
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
-        follow_url_list.append(page_parse.follow_page_parse(user_data_dict, follow_url_list, page_num))
+        follow_url_list += page_parse.follow_page_parse(user_data_dict, page_num + 1)
     return follow_url_list
 
 
@@ -128,10 +129,10 @@ def analyze_fans(user_data_dict):
     page_last = fans_total % 10
     # 循环每页爬取粉丝用户
     for num in range(1, page_num + 1):
-        fans_url_list = page_parse.fans_page_parse(user_data_dict, fans_url_list, num)
+        fans_url_list += page_parse.fans_page_parse(user_data_dict, num)
     # 如果最后一页非空，处理最后一页
     if page_last != 0:
-        fans_url_list.append(page_parse.fans_page_parse(user_data_dict, fans_url_list, page_num))
+        fans_url_list += page_parse.fans_page_parse(user_data_dict, page_num + 1)
     return fans_url_list
 
 
@@ -149,33 +150,33 @@ def analyze_profile(user_data_dict):
 
 
 def process_url(thread_name, url_value):
-    print "%s processing url: %s" % (thread_name, url_value)
+    logger.info("%s processing url: %s" % (thread_name, url_value))
     # 获取用户社交信息
     user_data_dict = get_social_data(url_value)
     # 获取用户资料
     user_data_dict = get_user_data(user_data_dict)
-    # # 爬取关注用户主页URL
-    # follow_url_list = analyze_follow(user_data_dict)
-    # # 爬取粉丝用户主页URL
-    # fans_url_list = analyze_fans(user_data_dict)
-    # # 用户主页URL
-    # url_list = follow_url_list + fans_url_list
+    # 爬取关注用户主页URL
+    follow_url_list = analyze_follow(user_data_dict)
+    # 爬取粉丝用户主页URL
+    fans_url_list = analyze_fans(user_data_dict)
+    # 用户主页URL
+    url_list = follow_url_list + fans_url_list
     # 爬取用户微博信息
     # profile_info_list = analyze_profile(user_data_dict)
-
+    # 将爬取的用户信息存入mysql，增加线程锁保证多线程安全
     thread_lock.acquire()
     dao.insert_user_data(user_data_dict)
+    dao.insert_new_url(url_list)
     dao.change_url_status(url_value)
-    # dao.insert_new_url(url_list)
     # dao.insert_profile_data(profile_info_list)
     thread_lock.release()
 
 
 def process_verified_user(thread_name, user_data_dict):
-    print "%s processing verified u_id: %s" % (thread_name, user_data_dict['user_id'])
+    logger.info("%s processing verified u_id: %s" % (thread_name, user_data_dict['user_id']))
     # 爬取用户微博信息
     profile_info_list = analyze_profile(user_data_dict)
-
+    # 将爬取的微博信息存入mysql，增加线程锁保证多线程安全
     thread_lock.acquire()
     dao.insert_profile_data(profile_info_list)
     dao.change_user_status(user_data_dict['user_id'])
@@ -221,11 +222,11 @@ def choose_crawler_mode(crawler_mode):
 
 
 def main():
-    crawler_mode = 2
+    crawler_mode = 1
     choose_crawler_mode(crawler_mode)
     # 爬取完成，终止程序
     dao.close_crawler_db()
-    print 'Done'
+    logger.info('Done')
     exit(0)
 
 if __name__ == '__main__':
