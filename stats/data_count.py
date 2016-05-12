@@ -3,14 +3,15 @@
 
 import time
 import MySQLdb
+from utils import dbutil
 
-crawler_db = MySQLdb.Connect(host="localhost", user="root", passwd="5179", db="weibo_crawler", charset='utf8')
+# 获取数据库连接
+crawler_db = dbutil.get_cursor_db()
 cursor = crawler_db.cursor()
 
 
+# 统计Mysql所有url_data表中URL总数
 def url_num():
-    # print '\n'
-    # print 'URL Num:'
     url_total = 0
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
@@ -30,9 +31,8 @@ def url_num():
     return url_total
 
 
+# 统计Mysql所有url_data表中完成状态的URL总数
 def finished_url_num():
-    # print '\n'
-    # print 'Finished URL Num:'
     url_finish_total = 0
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
@@ -52,9 +52,8 @@ def finished_url_num():
     return url_finish_total
 
 
+# 统计Mysql所有user_data表中用户的总数
 def user_num():
-    # print '\n'
-    # print 'User Num:'
     user_total = 0
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
@@ -74,9 +73,8 @@ def user_num():
     return user_total
 
 
+# 统计Mysql所有user_data表中用户的省份信息
 def province_num():
-    # print '\n'
-    # print 'Province Num:'
     province_dict = {}
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
@@ -99,9 +97,8 @@ def province_num():
     return province_dict
 
 
+# 统计Mysql所有user_data表中用户的生日信息
 def birthday_num():
-    # print '\n'
-    # print 'Birthday Num:'
     birthday_dict = {}
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
@@ -125,9 +122,8 @@ def birthday_num():
     return birthday_dict
 
 
+# 统计Mysql所有user_data表中男性用户的数量
 def user_man_num():
-    # print '\n'
-    # print 'User Man Num:'
     man_total = 0
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
@@ -147,9 +143,8 @@ def user_man_num():
     return man_total
 
 
+# 统计Mysql所有user_data表中女性用户的数量
 def user_woman_num():
-    # print '\n'
-    # print 'User Woman Num:'
     woman_total = 0
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
@@ -169,9 +164,8 @@ def user_woman_num():
     return woman_total
 
 
+# 统计Mysql所有user_data表中认证用户的数量
 def verified_user_num():
-    # print '\n'
-    # print 'Verified User Num:'
     verified_user_total = 0
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
@@ -191,9 +185,8 @@ def verified_user_num():
     return verified_user_total
 
 
+# 统计Mysql所有user_data表中已爬取微博信息的认证用户数量
 def finished_verified_user_num():
-    # print '\n'
-    # print 'Finished Verified User Num:'
     verified_user_finish_total = 0
     for index in range(0, 32):
         table_name = 'user_data' + str(index)
@@ -213,9 +206,8 @@ def finished_verified_user_num():
     return verified_user_finish_total
 
 
+# 统计Mysql所有profile_data表中微博的数量
 def profile_num():
-    # print '\n'
-    # print 'Profile Num:'
     profile_total = 0
     for index in range(0, 32):
         table_name = 'profile_data' + str(index)
@@ -235,6 +227,7 @@ def profile_num():
     return profile_total
 
 
+# 数据统计主函数
 def main():
     print 'Summarize: ' + time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
     print 'URL Total Num：%d' % url_num()

@@ -10,11 +10,12 @@ from utils import pageutil
 from dao import dao
 from utils import logutil
 
-# 定义全局变量
+# 定义全局线程锁、日志logger
 thread_lock = threading.Lock()
 logger = logutil.get_logger()
 
 
+# 获取用户资料线程类
 class MyThread(threading.Thread):
     def __init__(self, thread_id, thread_name, url_value):
         threading.Thread.__init__(self)
@@ -27,6 +28,7 @@ class MyThread(threading.Thread):
         logger.info("Exiting " + self.thread_name)
 
 
+# 获取微博信息线程类
 class ProfileThread(threading.Thread):
     def __init__(self, thread_id, thread_name, user_data_dict):
         threading.Thread.__init__(self)
@@ -39,6 +41,7 @@ class ProfileThread(threading.Thread):
         logger.info("Exiting " + self.thread_name)
 
 
+# 获取用户社交信息（用户ID、微博数、关注数、粉丝数）
 def get_social_data(user_home_url):
     # 获取用户主页面
     soup = pageutil.get_soup_from_page(user_home_url)
@@ -72,6 +75,7 @@ def get_social_data(user_home_url):
     return user_data_dict
 
 
+# 获取用户资料（昵称、认证情况、性别、地区、生日）
 def get_user_data(user_data_dict):
     download_url = 'http://weibo.cn/' + user_data_dict['user_id'] + '/info'
     # 获取用户资料页面
@@ -93,11 +97,13 @@ def get_user_data(user_data_dict):
     if user_data_dict['地区'.decode('utf-8')] != '':
         user_province = user_data_dict['地区'.decode('utf-8')].split(' ')[0]
         user_data_dict['地区'.decode('utf-8')] = user_province
+    # 异常的生日信息统计标记为0001-00-00，防止写入mysql出错
     if len(user_data_dict['生日'.decode('utf-8')]) != 10:
         user_data_dict['生日'.decode('utf-8')] = '0001-00-00'
     return user_data_dict
 
 
+# 解析关注页面，获取关注用户主页URL
 def analyze_follow(user_data_dict):
     follow_url_list = []
     # 获取关注总数
@@ -117,6 +123,7 @@ def analyze_follow(user_data_dict):
     return follow_url_list
 
 
+# 解析粉丝页面，获取粉丝用户主页URL
 def analyze_fans(user_data_dict):
     fans_url_list = []
     # 获取粉丝总数
@@ -136,19 +143,24 @@ def analyze_fans(user_data_dict):
     return fans_url_list
 
 
+# 解析微博页面，获取用户微博信息
 def analyze_profile(user_data_dict):
     profile_info_list = []
+    # 获取微博总数
     profile_total = int(user_data_dict['profile'])
     page_num = profile_total / 10
+    # 循环每页爬取微博信息
     for num in xrange(1, page_num + 1):
         result = page_parse.profile_page_parse(user_data_dict, num)
         if len(result[0]) != 0:
             profile_info_list += result[0]
+        # 全部微博数据量庞大，抓取用户特定时间段微博信息，
         if result[1] < 1459440000:
             break
     return profile_info_list
 
 
+# 处理用户信息
 def process_url(thread_name, url_value):
     logger.info("%s processing url: %s" % (thread_name, url_value))
     # 获取用户社交信息
@@ -163,6 +175,7 @@ def process_url(thread_name, url_value):
     url_list = follow_url_list + fans_url_list
     # 爬取用户微博信息
     # profile_info_list = analyze_profile(user_data_dict)
+
     # 将爬取的用户信息存入mysql，增加线程锁保证多线程安全
     thread_lock.acquire()
     dao.insert_user_data(user_data_dict)
@@ -172,10 +185,12 @@ def process_url(thread_name, url_value):
     thread_lock.release()
 
 
+# 处理微博信息
 def process_verified_user(thread_name, user_data_dict):
     logger.info("%s processing verified u_id: %s" % (thread_name, user_data_dict['user_id']))
     # 爬取用户微博信息
     profile_info_list = analyze_profile(user_data_dict)
+
     # 将爬取的微博信息存入mysql，增加线程锁保证多线程安全
     thread_lock.acquire()
     dao.insert_profile_data(profile_info_list)
@@ -183,7 +198,9 @@ def process_verified_user(thread_name, user_data_dict):
     thread_lock.release()
 
 
+# 模式选择：1-抓取用户资料和关注粉丝主页URL，2-抓取用户微博信息
 def choose_crawler_mode(crawler_mode):
+    # 抓取用户资料和关注粉丝主页URL模式
     if crawler_mode == 1:
         url_value_list = dao.get_url_from_database()
         # 根据URL等待队列循环爬取用户信息
@@ -197,11 +214,11 @@ def choose_crawler_mode(crawler_mode):
                 threads.append(thread)
             for thread in threads:
                 thread.join()
-            # time.sleep(random.randint(1, 2))
+            # 增加互斥锁，保证读取数据库线程安全
             thread_lock.acquire()
             url_value_list = dao.get_url_from_database()
             thread_lock.release()
-
+    # 抓取用户微博信息
     if crawler_mode == 2:
         verified_user_list = dao.get_verified_user()
         # 根据URL等待队列循环爬取用户信息
@@ -215,13 +232,15 @@ def choose_crawler_mode(crawler_mode):
                 threads.append(thread)
             for thread in threads:
                 thread.join()
-            # time.sleep(random.randint(1, 2))
+            # 增加互斥锁，保证读取数据库线程安全
             thread_lock.acquire()
             verified_user_list = dao.get_verified_user()
             thread_lock.release()
 
 
+# 爬虫主函数
 def main():
+    # 设定爬虫模式
     crawler_mode = 1
     choose_crawler_mode(crawler_mode)
     # 爬取完成，终止程序

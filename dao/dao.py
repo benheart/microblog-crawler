@@ -6,12 +6,15 @@ from utils import logutil
 
 WAIT_STATUS = 0
 FINISH_STATUS = 1
+HALF_WAIT_STATUS = 2
 
+# 定义全局Mysql连接、日志logger
 crawler_db = dbutil.get_cursor_db()
 cursor = crawler_db.cursor()
 logger = logutil.get_logger()
 
 
+# 从Mysql获取URL列表
 def get_url_from_database():
     url_value_list = []
     for index in range(0, 32):
@@ -33,6 +36,7 @@ def get_url_from_database():
     return url_value_list
 
 
+# 从Mysql获取未爬取的认证用户列表
 def get_verified_user():
     verified_user_list = []
     for index in range(0, 32):
@@ -54,6 +58,7 @@ def get_verified_user():
     return verified_user_list
 
 
+# 改变URL队列状态
 def change_url_status(url_value):
     url_id = hash(url_value)
     table_name = 'url_data' + str(url_id % 32)
@@ -69,6 +74,7 @@ def change_url_status(url_value):
         crawler_db.rollback()
 
 
+# 改变Mysql中用户爬取状态信息
 def change_user_status(u_id):
     table_name = 'user_data' + str(int(u_id) % 32)
     sql = "update %s set u_status = %s where u_id = %s" % (table_name, str(FINISH_STATUS), u_id)
@@ -83,6 +89,7 @@ def change_user_status(u_id):
         crawler_db.rollback()
 
 
+# 向Mysql插入新的URL
 def insert_new_url(url_list):
     for url_value in url_list:
         if url_in_database(url_value):
@@ -101,6 +108,7 @@ def insert_new_url(url_list):
                 crawler_db.rollback()
 
 
+# 判断Mysql是否存在该URL
 def url_in_database(url_value):
     url_id = hash(url_value)
     table_name = 'url_data' + str(url_id % 32)
@@ -119,6 +127,7 @@ def url_in_database(url_value):
         crawler_db.rollback()
 
 
+# 向Mysql中插入用户信息
 def insert_user_data(user_data_dict):
     # 获取用户数据
     u_id = user_data_dict['user_id']
@@ -148,6 +157,7 @@ def insert_user_data(user_data_dict):
         crawler_db.rollback()
 
 
+# 向Mysql中插入微博信息
 def insert_profile_data(profile_info_list):
     for profile_data_dict in profile_info_list:
         profile_id = profile_data_dict['profile_id']
@@ -175,5 +185,6 @@ def insert_profile_data(profile_info_list):
             crawler_db.rollback()
 
 
+# 关闭Mysql数据库连接
 def close_crawler_db():
     crawler_db.close()

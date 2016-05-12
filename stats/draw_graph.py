@@ -3,18 +3,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 import data_count
 
+# 设置字体，防止中文乱码
 plt.rcParams['font.sans-serif'] = ['SimHei']
 plt.rcParams['axes.unicode_minus'] = False
 
 
+# 用户认证情况分布图
 def verified_draw():
+    # 从Mysql获取认证用户数量和非认证用户数量
     verified_num = data_count.verified_user_num()
     unverified_num = data_count.user_num() - verified_num
+    # 设定标签
     labels = [u'认证用户', u'非认证用户']
     user_num = [verified_num, unverified_num]
-    # make a square figure
+    # 设定画布序号、大小
     plt.figure(1, figsize=(7, 7))
-    # Colors used. Recycle if not enough.
+    # 设定饼状图颜色
     colors = ["aqua", "pink"]
     # Pie Plot
     plt.pie(user_num, colors=colors, labels=labels, autopct='%1.1f%%', pctdistance=0.8, shadow=False)
@@ -22,14 +26,17 @@ def verified_draw():
     plt.show()
 
 
+# 用户性别比例分布图
 def gender_draw():
+    # 从Mysql获取男性用户数量和女性用户数量
     man_num = data_count.user_man_num()
     woman_num = data_count.user_woman_num()
+    # 设定标签
     labels = [u'男', u'女']
     user_num = [man_num, woman_num]
-    # make a square figure
+    # 设定画布序号、大小
     plt.figure(2, figsize=(7, 7))
-    # Colors used. Recycle if not enough.
+    # 设定饼状图颜色
     colors = ["aqua", "pink"]
     # Pie Plot
     plt.pie(user_num, colors=colors, labels=labels, autopct='%1.1f%%', pctdistance=0.8, shadow=False)
@@ -37,6 +44,7 @@ def gender_draw():
     plt.show()
 
 
+# 用户省份分布图
 def province_draw():
     labels = []
     user_num = []
@@ -70,6 +78,7 @@ def province_draw():
     plt.show()
 
 
+# 画图主函数
 def main():
     verified_draw()
     gender_draw()
