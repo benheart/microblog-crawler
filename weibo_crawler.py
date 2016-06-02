@@ -167,19 +167,19 @@ def process_url(thread_name, url_value):
     user_data_dict = get_social_data(url_value)
     # 获取用户资料
     user_data_dict = get_user_data(user_data_dict)
-    # 爬取关注用户主页URL
-    follow_url_list = analyze_follow(user_data_dict)
-    # 爬取粉丝用户主页URL
-    fans_url_list = analyze_fans(user_data_dict)
-    # 用户主页URL
-    url_list = follow_url_list + fans_url_list
+    # # 爬取关注用户主页URL
+    # follow_url_list = analyze_follow(user_data_dict)
+    # # 爬取粉丝用户主页URL
+    # fans_url_list = analyze_fans(user_data_dict)
+    # # 用户主页URL
+    # url_list = follow_url_list + fans_url_list
     # 爬取用户微博信息
     # profile_info_list = analyze_profile(user_data_dict)
 
     # 将爬取的用户信息存入mysql，增加线程锁保证多线程安全
     thread_lock.acquire()
     dao.insert_user_data(user_data_dict)
-    dao.insert_new_url(url_list)
+    # dao.insert_new_url(url_list)
     dao.change_url_status(url_value)
     # dao.insert_profile_data(profile_info_list)
     thread_lock.release()

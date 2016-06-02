@@ -19,7 +19,7 @@ def get_url_from_database():
     url_value_list = []
     for index in range(0, 32):
         table_name = 'url_data' + str(index)
-        sql = "select * from %s where url_status = 0 limit 2" % table_name
+        sql = "select * from %s where url_status = 0 limit 3" % table_name
         sql = sql.encode('utf-8')
         try:
             cursor.execute(sql)
@@ -153,6 +153,53 @@ def insert_user_data(user_data_dict):
         logger.info('Insert user data to the database successfully! TABLE:%s UID:%s' % (table_name, u_id))
     except MySQLdb.Error, error_info:
         logger.warning('Fail to insert user data to the database! TABLE:%s UID:%s' % (table_name, u_id))
+        logger.error(error_info)
+        crawler_db.rollback()
+
+
+# 从Mysql获取未爬取的认证用户列表
+def get_special_user(uid):
+    screen_name = ''
+    fansNum = 0
+    sql = "select screen_name, fansNum from user_data where id = " + uid
+    sql = sql.encode('utf-8')
+    try:
+        cursor.execute(sql)
+        results = cursor.fetchall()
+        if len(results) != 0:
+            for row in results:
+                screen_name = row[0]
+                fansNum = row[1]
+            return screen_name, fansNum
+    except MySQLdb.Error, error_info:
+        logger.error(error_info)
+        crawler_db.rollback()
+        return screen_name, fansNum
+
+
+# 向Mysql中插入特殊用户信息
+def insert_special_user(user):
+    uid = user['uid']
+    screen_name = user['screen_name'].replace("'", "")
+    statuses_count = user['statuses_count']
+    verified = user['verified']
+    verified_reason = user['verified_reason'].replace("'", "")
+    verified_type = user['verified_type']
+    gender = user['gender']
+    ismember = user['ismember']
+    fansNum = user['fansNum']
+    user_data = (uid, screen_name, statuses_count, verified, verified_reason,
+                 verified_type, gender, ismember, fansNum)
+    sql = "insert into user_data (id, screen_name, statuses_count, verified, verified_reason, " \
+          "verified_type, gender, ismember, fansNum) values " \
+          "(%d, '%s', %d, %d, '%s', %d, %d, %d, %d)" % user_data
+    sql = sql.encode('utf-8')
+    try:
+        cursor.execute(sql)
+        crawler_db.commit()
+        logger.info('Insert user data to the database successfully! UID:%s' % uid)
+    except MySQLdb.Error, error_info:
+        logger.warning('Fail to insert user data to the database! UID:%s' % uid)
         logger.error(error_info)
         crawler_db.rollback()
 
