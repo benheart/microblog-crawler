@@ -4,7 +4,7 @@ import json
 import codecs
 from dao import dao
 
-fp = codecs.open('network.csv', 'wb', encoding='utf-8')
+fp = codecs.open('network_singer.csv', 'wb', encoding='utf-8')
 
 
 class JSONObject:
@@ -13,9 +13,16 @@ class JSONObject:
 
 
 def main():
+    source_dict = {}
     singers_follow = codecs.open('singers_follow', 'rb', encoding='utf-8')
     line_num = 1
     fp.write("Source,Target,Weight\n")
+    for line in singers_follow:
+        hwj = line.split('###')
+        source, source_fansNum = dao.get_special_user(hwj[1])
+        if source not in source_dict.keys():
+            source_dict[source] = source_fansNum
+    singers_follow = codecs.open('singers_follow', 'rb', encoding='utf-8')
     for line in singers_follow:
         hwj = line.split('###')
         source, source_fansNum = dao.get_special_user(hwj[1])
@@ -56,8 +63,10 @@ def main():
             target = screen_name
             weight = source_fansNum + fansNum
             # dao.insert_special_user(user)
-            if source != '' and target != '':
+            if target in source_dict.keys() and source != '':
                 fp.write("%s,%s,%d\n" % (source, target, weight))
+            # if source != '' and target != '':
+            #     fp.write("%s,%s,%d\n" % (source, target, weight))
             # exit(0)
         line_num += 1
         # exit(0)

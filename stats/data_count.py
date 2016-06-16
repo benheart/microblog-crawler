@@ -122,6 +122,81 @@ def birthday_num():
     return birthday_dict
 
 
+# 统计Mysql所有表中部分认证用户的发微博的频率
+def profile_day():
+    frequency_dict = {}
+    for index in range(0, 32):
+        table_name = 'profile_data' + str(index)
+        sql = "select DATE_FORMAT(p_time, '%d'), count(*) from " + table_name + \
+              " group by DATE_FORMAT(p_time, '%y-%m-%d')"
+        sql = sql.encode('utf-8')
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            if len(results) != 0:
+                for row in results:
+                    profile_day_time = row[0]
+                    profile_day_num = row[1]
+                    if profile_day_time in frequency_dict.keys():
+                        frequency_dict[profile_day_time] = frequency_dict[profile_day_time] + profile_day_num
+                    else:
+                        frequency_dict[profile_day_time] = profile_day_num
+        except MySQLdb.Error, error_info:
+            print error_info
+            crawler_db.rollback()
+    return frequency_dict
+
+
+# 统计Mysql所有表中部分认证用户的发微博的频率
+def profile_hour():
+    frequency_dict = {}
+    for index in range(0, 32):
+        table_name = 'profile_data' + str(index)
+        sql = "select DATE_FORMAT(p_time, '%H'), count(*) from " + table_name + \
+              " group by DATE_FORMAT(p_time, '%H')"
+        sql = sql.encode('utf-8')
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            if len(results) != 0:
+                for row in results:
+                    profile_hour_time = row[0]
+                    profile_hour_num = row[1]
+                    if profile_hour_time in frequency_dict.keys():
+                        frequency_dict[profile_hour_time] = frequency_dict[profile_hour_time] + profile_hour_num
+                    else:
+                        frequency_dict[profile_hour_time] = profile_hour_num
+        except MySQLdb.Error, error_info:
+            print error_info
+            crawler_db.rollback()
+    return frequency_dict
+
+
+# 统计Mysql所有表中部分认证用户的发微博的来源
+def profile_source():
+    source_dict = {}
+    for index in range(0, 32):
+        table_name = 'profile_data' + str(index)
+        sql = "select p_source, count(*) from " + table_name + \
+              " group by p_source"
+        sql = sql.encode('utf-8')
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            if len(results) != 0:
+                for row in results:
+                    profile_source_name = row[0]
+                    profile_source_num = row[1]
+                    if profile_source_name in source_dict.keys():
+                        source_dict[profile_source_name] = source_dict[profile_source_name] + profile_source_num
+                    else:
+                        source_dict[profile_source_name] = profile_source_num
+        except MySQLdb.Error, error_info:
+            print error_info
+            crawler_db.rollback()
+    return source_dict
+
+
 # 统计Mysql所有user_data表中男性用户的数量
 def user_man_num():
     man_total = 0
@@ -244,6 +319,9 @@ def main():
         print item[0] + ':' + str(item[1])
     print 'Birthday Num: '
     for item in birthday_num().items():
+        print item[0] + ':' + str(item[1])
+    print 'Profile Frequency: '
+    for item in profile_day().items():
         print item[0] + ':' + str(item[1])
 
 

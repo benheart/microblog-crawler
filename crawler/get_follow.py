@@ -10,6 +10,7 @@ from utils import logutil
 
 logger = logutil.get_logger()
 fp = codecs.open('singers_follow', 'wb', encoding='utf-8')
+total = 0
 
 
 class JSONObject:
@@ -33,7 +34,7 @@ class MyThread(threading.Thread):
 def get_user_page(param):
     url_value = 'http://m.weibo.cn/page/json?'
     cookies = [
-        'SUHB=0y0JuIVRo00uwa; _T_WM=e5908efc59f62dcd44aa8cfe3e287e58; M_WEIBOCN_PARAMS=featurecode%3D20000181%26luicode%3D20000058%26lfid%3D1005051776845763%26fid%3D1005051776845763_-_FOLLOWERS%26uicode%3D20000058; WEIBOCN_WM=3349; H5_wentry=H5; backURL=http%3A%2F%2Fm.weibo.cn%2F; SUB=_2A256SvPODeTxGeNG4lQX9SnJzjWIHXVZtJ2GrDV6PUJbkdANLW3BkW2hwmAMfLZpyArWRzUIFBPZjAWZ3A..; SSOLoginState=1464763294; gsid_CTandWM=4uzeCpOz5eQCLvSpezxIuoJZn91; H5_INDEX=2; H5_INDEX_TITLE=%E6%A1%90%E5%86%B7%E4%B9%8B%E6%B4%97%E6%BE%A1%E8%BD%AC%E5%9C%88%E5%9C%88',
+        '_T_WM=d1ffda353c4c42d89a6dbb744820b8ef; ALF=1467709058; SUB=_2A256V5nbDeTxGeVO4lMW8ivPzDuIHXVZuyeTrDV6PUJbktANLUH6kW1gSa3UlYO_0fyvZMaAPvW9OGnyRA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFfCw2GN3RyY7P2UsKFBk8x5JpX5o2p5NHD95Q0eh.pS0zfe0MNWs4DqcjsIGU3S0zN; SUHB=0S7ShF29t50pZo; SSOLoginState=1465117067; gsid_CTandWM=4uFyCpOz5O9FNcuMU1eujcYix65; M_WEIBOCN_PARAMS=featurecode%3D20000181%26luicode%3D10000011%26lfid%3D1005051646218964%26fid%3D1005051646218964_-_FOLLOWERS%26uicode%3D10000012',
         '_T_WM=f63b4d6278c70f86dcbf71778a5d3015; gsid_CTandWM=4uhja3a71B2In40PqJhJJcYix65; SUB=_2A256MqDxDeRxGeVO4lMW8ivPzDuIHXVZ3MC5rDV6PUJbstAKLUjykW1LHesYUGIz4hUnaxJS_1lKSUIQ1m1epw..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFfCw2GN3RyY7P2UsKFBk8x5JpX5o2p5NHD95Q0eh.pS0zfe0MN; SUHB=0ft519dfWRO-Pl',
         'SUB=_2A256PFXxDeTxGeNG4lYY9ijMyjuIHXVZ33u5rDV6PUJbstAKLWzekW1LHesd7sojU1i0ss4ytXwcjFrVhXFriw..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WhbR2V8PomNBLO9pRbubrLJ5JpX5o2p5NHD95Qf1h.X1Kqceh2N; SUHB=0ElKOB8-urUe6H; SSOLoginState=1463297441; _T_WM=b75754462a8d5b5f3b35364fca266ced; M_WEIBOCN_PARAMS=uicode%3D20000174; gsid_CTandWM=4uvkCpOz5CYH7uyKUvAQFoJy60h; H5_INDEX=1; H5_INDEX_TITLE=%E4%BC%8F%E5%8F%88%E8%93%9D%E9%85%B1%E7%88%86%E7%B2%92%E7%B2%92',
         '_T_WM=f63b4d6278c70f86dcbf71778a5d3015; SUB=_2A256LRXNDeRxGeVO4lMW8ivPzDuIHXVZ0buFrDV6PUNbvtANLVj4kW1LHeubF_6JrpQZzGFum3V7gYoE4DA8VA..; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9WFfCw2GN3RyY7P2UsKFBk8x5JpX5KMt; SUHB=0BL4eAF-ObD_7A; gsid_CTandWM=4ugaCpOz5wvV6LXbaH7U1cYix65; M_WEIBOCN_PARAMS=fid%3D100803%26uicode%3D10000011']
@@ -61,6 +62,7 @@ def analyze_follow(line, u_id, param):
 
 
 def get_follow(line, thread_name, u_id):
+    global total
     logger.info("%s processing %s u_id: %d" % (thread_name, line, u_id))
     page = 1
     while 1:
@@ -74,31 +76,35 @@ def get_follow(line, thread_name, u_id):
         if count is None:
             break
         page += 1
-        second = random.randint(0, 10)
-        time.sleep(second)
+        total += 1
+        # second = random.randint(0, 10)
+        # time.sleep(second)
 
 
 def main():
+    global total
     singers = codecs.open('singers', 'rb', encoding='utf-8')
     line_num = 1
     for line in singers:
-        if line_num >= 12:
+        if line_num >= 23:
             hwj = json.loads(line, encoding='utf-8', object_hook=JSONObject)
             line = 'Line-' + unicode(line_num)
             # 创建新线程
             for num in xrange(len(hwj.cards[0].card_group)):
-                if line_num == 12 and num >= 6:
+                print total
+                if line_num == 23 and num >= 8:
                     u_id = hwj.cards[0].card_group[num].user.id
                     name = 'Thread-' + str(num)
                     thread = MyThread(line, name, u_id)
                     thread.start()
                     thread.join()
-                if line_num > 12:
+                if line_num > 23:
                     u_id = hwj.cards[0].card_group[num].user.id
                     name = 'Thread-' + str(num)
                     thread = MyThread(line, name, u_id)
                     thread.start()
                     thread.join()
+
         line_num += 1
 
 
