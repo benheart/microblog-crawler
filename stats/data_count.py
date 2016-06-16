@@ -197,6 +197,31 @@ def profile_source():
     return source_dict
 
 
+# 统计Mysql所有表中部分认证用户的发微博的频率
+def profile_frequency():
+    frequency_dict = {}
+    for index in range(0, 32):
+        table_name = 'profile_data' + str(index)
+        sql = "select p_uid, count(*) from " + table_name + \
+              " group by p_uid"
+        sql = sql.encode('utf-8')
+        try:
+            cursor.execute(sql)
+            results = cursor.fetchall()
+            if len(results) != 0:
+                for row in results:
+                    p_uid = row[0]
+                    frequency_num = row[1]
+                    if p_uid in frequency_dict.keys():
+                        frequency_dict[p_uid] = frequency_dict[p_uid] + frequency_num
+                    else:
+                        frequency_dict[p_uid] = frequency_num
+        except MySQLdb.Error, error_info:
+            print error_info
+            crawler_db.rollback()
+    return frequency_dict
+
+
 # 统计Mysql所有user_data表中男性用户的数量
 def user_man_num():
     man_total = 0

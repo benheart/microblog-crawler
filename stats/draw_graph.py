@@ -224,15 +224,49 @@ def profile_source_draw():
     plt.show()
 
 
+# 认证用户发微博频率分布图
+def profile_frequency_draw():
+    others = 0
+    labels = [u'1-10条', u'10-30条', u'30-60条', u'60-120条', u'120-300条', u'300条以上']
+    user_num = [0, 0, 0, 0, 0, 0]
+    frequency_dict = data_count.profile_frequency()
+    for frequency in frequency_dict.items():
+        if 1 <= int(frequency[1]) < 10:
+            user_num[0] += 1
+        elif 10 <= int(frequency[1]) < 30:
+            user_num[1] += 1
+        elif 30 <= int(frequency[1]) < 60:
+            user_num[2] += 1
+        elif 60 <= int(frequency[1]) < 120:
+            user_num[3] += 1
+        elif 120 <= int(frequency[1]) < 300:
+            user_num[4] += 1
+        elif 300 <= int(frequency[1]):
+            user_num[5] += 1
+        else:
+            others += 1
+    # 打印脏数据条数
+    print others
+    # 设定画布序号、大小
+    plt.figure(8, figsize=(7, 7))
+    # 设定饼状图颜色
+    colors = ["aqua", "pink", 'yellow', 'green']
+    # Pie Plot
+    plt.pie(user_num, colors=colors, labels=labels, autopct='%1.1f%%', pctdistance=0.8, shadow=False)
+    plt.title(u'用户每月发微博频率分布')
+    plt.show()
+
+
 # 画图主函数
 def main():
     # verified_draw()
     # gender_draw()
     # province_draw()
-    birthday_draw()
+    # birthday_draw()
     # profile_day_draw()
     # profile_hour_draw()
     # profile_source_draw()
+    profile_frequency_draw()
 
 
 if __name__ == '__main__':
